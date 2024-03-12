@@ -1,7 +1,7 @@
 import { useDisclosure } from '@mantine/hooks'
 import { UiHeader, UiHeaderLink, UiLayout } from '@pubkey-ui/core'
 import { ReactNode } from 'react'
-import { AccountUiChecker } from './features/account/ui/account-ui-checker'
+import { AccountUiChecker, AccountUiCheckerKeypair } from './features/account/ui/account-ui-checker'
 import { ClusterChecker } from './features/cluster/cluster-ui'
 import { AppLogo, AppLogoType } from './ui'
 
@@ -30,6 +30,7 @@ export function AppLayout({
     >
       <ClusterChecker>
         <AccountUiChecker />
+        <AccountUiCheckerKeypair />
       </ClusterChecker>
       {children}
     </UiLayout>

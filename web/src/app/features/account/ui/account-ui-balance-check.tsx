@@ -21,6 +21,7 @@ export function AccountUiBalanceCheck({
   if (query.isError || !query.data) {
     return (
       <UiWarning
+        mb="xl"
         styles={{
           root: { display: 'flex', justifyContent: 'center' },
           title: { justifyContent: 'center' },

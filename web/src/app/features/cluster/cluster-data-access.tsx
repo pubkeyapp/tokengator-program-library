@@ -31,8 +31,8 @@ export const defaultClusters: Cluster[] = [
   },
 ]
 
-const clusterAtom = atomWithStorage<Cluster>('solana-cluster', defaultClusters[0])
-const clustersAtom = atomWithStorage<Cluster[]>('solana-clusters', defaultClusters)
+const clusterAtom = atomWithStorage<Cluster>('solana-cluster', defaultClusters[0], undefined, { getOnInit: true })
+const clustersAtom = atomWithStorage<Cluster[]>('solana-clusters', defaultClusters, undefined, { getOnInit: true })
 
 const activeClustersAtom = atom<Cluster[]>((get) => {
   const clusters = get(clustersAtom)

@@ -4,13 +4,11 @@ use crate::constants::*;
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
 pub struct MinterMetadataConfig {
-    pub image: Option<String>,
+    pub image_url: String,
     pub name: String,
     pub symbol: String,
     pub metadata: Option<Vec<[String; 2]>>,
-    pub uri: Option<String>,
-    // pub update_authority: Option<Pubkey>,
-    // pub mint_authority: Option<Pubkey>,
+    pub uri: String,
 }
 
 impl MinterMetadataConfig {
@@ -21,7 +19,7 @@ impl MinterMetadataConfig {
             0
         };
 
-        1 + MAX_IMAGE_URL_SIZE + // image
+        MAX_IMAGE_URL_SIZE + // image
         MAX_NAME_SIZE + // name
         MAX_SYMBOL_SIZE + // symbol
         1 + (4 + metadata_size) + // metadata
@@ -36,14 +34,12 @@ impl MinterMetadataConfig {
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
 pub struct MinterInterestConfig {
-    rate: u64,
-    rate_authority: Option<Pubkey>,
+    pub rate: i16,
 }
 
 impl MinterInterestConfig {
     pub fn size() -> usize {
-        8 + // rate
-        1 + 32 // rate_authority
+        2 // rate
     }
 
     pub fn validate(&self) -> Result<()> {
@@ -54,14 +50,14 @@ impl MinterInterestConfig {
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
 pub struct MinterTransferFeeConfig {
-    transfer_fee_rate: u64,
-    transfer_fee_account: Pubkey,
+    pub transfer_fee_basis_points: u16,
+    pub max_fee_rate: u64,
 }
 
 impl MinterTransferFeeConfig {
     pub fn size() -> usize {
-        8 + // transfer_fee_rate
-        32 // transfer_fee_account
+        2 + // transfer_fee_basis_points
+        8 // max_fee_rate
     }
 
     pub fn validate(&self) -> Result<()> {
@@ -74,10 +70,6 @@ impl MinterTransferFeeConfig {
 pub struct MinterConfig {
     pub mint: Pubkey,
     pub decimals: u8,
-    pub fee_payer: Pubkey,
-    // pub authority: Option<Pubkey>,
-    // pub close_authority: Option<Pubkey>,
-    pub freeze_authority: Option<Pubkey>,
     pub metadata_config: Option<MinterMetadataConfig>,
     pub interest_config: Option<MinterInterestConfig>,
     pub transfer_fee_config: Option<MinterTransferFeeConfig>,
@@ -94,8 +86,6 @@ impl MinterConfig {
         8 + // anchor discriminator
         32 + // mint
         1 + // decimals
-        32 + // fee_payer
-        1 + 32 + // freeze_authority
         1 + MinterMetadataConfig::size(metadata) + // metadata_config
         1 + MinterInterestConfig::size() + // interest_config
         1 + MinterTransferFeeConfig::size() // transfer_fee

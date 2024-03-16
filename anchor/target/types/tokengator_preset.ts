@@ -11,9 +11,24 @@ export type TokengatorPreset = {
           "isSigner": false
         },
         {
-          "name": "authority",
+          "name": "feePayer",
           "isMut": true,
           "isSigner": true
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "tokenExtensionsProgram",
+          "isMut": false,
+          "isSigner": false
         },
         {
           "name": "systemProgram",
@@ -44,6 +59,11 @@ export type TokengatorPreset = {
           "isSigner": true
         },
         {
+          "name": "feePayer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
           "name": "systemProgram",
           "isMut": false,
           "isSigner": false
@@ -67,6 +87,11 @@ export type TokengatorPreset = {
           "isSigner": false
         },
         {
+          "name": "feePayer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
           "name": "authority",
           "isMut": false,
           "isSigner": true
@@ -80,6 +105,27 @@ export type TokengatorPreset = {
           }
         }
       ]
+    },
+    {
+      "name": "mintPreset",
+      "accounts": [
+        {
+          "name": "preset",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
     }
   ],
   "accounts": [
@@ -103,6 +149,10 @@ export type TokengatorPreset = {
           {
             "name": "imageUrl",
             "type": "string"
+          },
+          {
+            "name": "feePayer",
+            "type": "publicKey"
           },
           {
             "name": "authorities",
@@ -151,9 +201,31 @@ export type TokengatorPreset = {
             "type": "string"
           },
           {
-            "name": "minterConfig",
+            "name": "decimals",
+            "type": "u8"
+          },
+          {
+            "name": "metadataConfig",
             "type": {
-              "defined": "MinterConfig"
+              "option": {
+                "defined": "MinterMetadataConfig"
+              }
+            }
+          },
+          {
+            "name": "interestConfig",
+            "type": {
+              "option": {
+                "defined": "MinterInterestConfig"
+              }
+            }
+          },
+          {
+            "name": "transferFeeConfig",
+            "type": {
+              "option": {
+                "defined": "MinterTransferFeeConfig"
+              }
             }
           }
         ]
@@ -177,10 +249,8 @@ export type TokengatorPreset = {
         "kind": "struct",
         "fields": [
           {
-            "name": "image",
-            "type": {
-              "option": "string"
-            }
+            "name": "imageUrl",
+            "type": "string"
           },
           {
             "name": "name",
@@ -205,9 +275,7 @@ export type TokengatorPreset = {
           },
           {
             "name": "uri",
-            "type": {
-              "option": "string"
-            }
+            "type": "string"
           }
         ]
       }
@@ -219,13 +287,7 @@ export type TokengatorPreset = {
         "fields": [
           {
             "name": "rate",
-            "type": "u64"
-          },
-          {
-            "name": "rateAuthority",
-            "type": {
-              "option": "publicKey"
-            }
+            "type": "i16"
           }
         ]
       }
@@ -236,12 +298,12 @@ export type TokengatorPreset = {
         "kind": "struct",
         "fields": [
           {
-            "name": "transferFeeRate",
-            "type": "u64"
+            "name": "transferFeeBasisPoints",
+            "type": "u16"
           },
           {
-            "name": "transferFeeAccount",
-            "type": "publicKey"
+            "name": "maxFeeRate",
+            "type": "u64"
           }
         ]
       }
@@ -258,16 +320,6 @@ export type TokengatorPreset = {
           {
             "name": "decimals",
             "type": "u8"
-          },
-          {
-            "name": "feePayer",
-            "type": "publicKey"
-          },
-          {
-            "name": "freezeAuthority",
-            "type": {
-              "option": "publicKey"
-            }
           },
           {
             "name": "metadataConfig",
@@ -305,41 +357,46 @@ export type TokengatorPreset = {
     },
     {
       "code": 6001,
+      "name": "InvalidFeePayer",
+      "msg": "Invalid Fee payer"
+    },
+    {
+      "code": 6002,
       "name": "UnAuthorized",
       "msg": "Account unauthorized to perform this action"
     },
     {
-      "code": 6002,
+      "code": 6003,
       "name": "AuthorityAlreadyExists",
       "msg": "Authority already exists"
     },
     {
-      "code": 6003,
+      "code": 6004,
       "name": "AuthorityNonExistant",
       "msg": "Authority does not exist"
     },
     {
-      "code": 6004,
+      "code": 6005,
       "name": "CannotRemoveSoloAuthority",
       "msg": "Cannot remove last remaining authority"
     },
     {
-      "code": 6005,
+      "code": 6006,
       "name": "InvalidPresetName",
       "msg": "Invalid preset name"
     },
     {
-      "code": 6006,
+      "code": 6007,
       "name": "InvalidPresetDescription",
       "msg": "Invalid preset description"
     },
     {
-      "code": 6007,
+      "code": 6008,
       "name": "InvalidPresetImageURL",
       "msg": "Invalid Image Url"
     },
     {
-      "code": 6008,
+      "code": 6009,
       "name": "MaxSizeReached",
       "msg": "Array reached max size"
     }
@@ -359,9 +416,24 @@ export const IDL: TokengatorPreset = {
           "isSigner": false
         },
         {
-          "name": "authority",
+          "name": "feePayer",
           "isMut": true,
           "isSigner": true
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "tokenExtensionsProgram",
+          "isMut": false,
+          "isSigner": false
         },
         {
           "name": "systemProgram",
@@ -392,6 +464,11 @@ export const IDL: TokengatorPreset = {
           "isSigner": true
         },
         {
+          "name": "feePayer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
           "name": "systemProgram",
           "isMut": false,
           "isSigner": false
@@ -415,6 +492,11 @@ export const IDL: TokengatorPreset = {
           "isSigner": false
         },
         {
+          "name": "feePayer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
           "name": "authority",
           "isMut": false,
           "isSigner": true
@@ -428,6 +510,27 @@ export const IDL: TokengatorPreset = {
           }
         }
       ]
+    },
+    {
+      "name": "mintPreset",
+      "accounts": [
+        {
+          "name": "preset",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
     }
   ],
   "accounts": [
@@ -451,6 +554,10 @@ export const IDL: TokengatorPreset = {
           {
             "name": "imageUrl",
             "type": "string"
+          },
+          {
+            "name": "feePayer",
+            "type": "publicKey"
           },
           {
             "name": "authorities",
@@ -499,9 +606,31 @@ export const IDL: TokengatorPreset = {
             "type": "string"
           },
           {
-            "name": "minterConfig",
+            "name": "decimals",
+            "type": "u8"
+          },
+          {
+            "name": "metadataConfig",
             "type": {
-              "defined": "MinterConfig"
+              "option": {
+                "defined": "MinterMetadataConfig"
+              }
+            }
+          },
+          {
+            "name": "interestConfig",
+            "type": {
+              "option": {
+                "defined": "MinterInterestConfig"
+              }
+            }
+          },
+          {
+            "name": "transferFeeConfig",
+            "type": {
+              "option": {
+                "defined": "MinterTransferFeeConfig"
+              }
             }
           }
         ]
@@ -525,10 +654,8 @@ export const IDL: TokengatorPreset = {
         "kind": "struct",
         "fields": [
           {
-            "name": "image",
-            "type": {
-              "option": "string"
-            }
+            "name": "imageUrl",
+            "type": "string"
           },
           {
             "name": "name",
@@ -553,9 +680,7 @@ export const IDL: TokengatorPreset = {
           },
           {
             "name": "uri",
-            "type": {
-              "option": "string"
-            }
+            "type": "string"
           }
         ]
       }
@@ -567,13 +692,7 @@ export const IDL: TokengatorPreset = {
         "fields": [
           {
             "name": "rate",
-            "type": "u64"
-          },
-          {
-            "name": "rateAuthority",
-            "type": {
-              "option": "publicKey"
-            }
+            "type": "i16"
           }
         ]
       }
@@ -584,12 +703,12 @@ export const IDL: TokengatorPreset = {
         "kind": "struct",
         "fields": [
           {
-            "name": "transferFeeRate",
-            "type": "u64"
+            "name": "transferFeeBasisPoints",
+            "type": "u16"
           },
           {
-            "name": "transferFeeAccount",
-            "type": "publicKey"
+            "name": "maxFeeRate",
+            "type": "u64"
           }
         ]
       }
@@ -606,16 +725,6 @@ export const IDL: TokengatorPreset = {
           {
             "name": "decimals",
             "type": "u8"
-          },
-          {
-            "name": "feePayer",
-            "type": "publicKey"
-          },
-          {
-            "name": "freezeAuthority",
-            "type": {
-              "option": "publicKey"
-            }
           },
           {
             "name": "metadataConfig",
@@ -653,41 +762,46 @@ export const IDL: TokengatorPreset = {
     },
     {
       "code": 6001,
+      "name": "InvalidFeePayer",
+      "msg": "Invalid Fee payer"
+    },
+    {
+      "code": 6002,
       "name": "UnAuthorized",
       "msg": "Account unauthorized to perform this action"
     },
     {
-      "code": 6002,
+      "code": 6003,
       "name": "AuthorityAlreadyExists",
       "msg": "Authority already exists"
     },
     {
-      "code": 6003,
+      "code": 6004,
       "name": "AuthorityNonExistant",
       "msg": "Authority does not exist"
     },
     {
-      "code": 6004,
+      "code": 6005,
       "name": "CannotRemoveSoloAuthority",
       "msg": "Cannot remove last remaining authority"
     },
     {
-      "code": 6005,
+      "code": 6006,
       "name": "InvalidPresetName",
       "msg": "Invalid preset name"
     },
     {
-      "code": 6006,
+      "code": 6007,
       "name": "InvalidPresetDescription",
       "msg": "Invalid preset description"
     },
     {
-      "code": 6007,
+      "code": 6008,
       "name": "InvalidPresetImageURL",
       "msg": "Invalid Image Url"
     },
     {
-      "code": 6008,
+      "code": 6009,
       "name": "MaxSizeReached",
       "msg": "Array reached max size"
     }

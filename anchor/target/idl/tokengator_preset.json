@@ -11,9 +11,24 @@
           "isSigner": false
         },
         {
-          "name": "authority",
+          "name": "feePayer",
           "isMut": true,
           "isSigner": true
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "tokenExtensionsProgram",
+          "isMut": false,
+          "isSigner": false
         },
         {
           "name": "systemProgram",
@@ -44,6 +59,11 @@
           "isSigner": true
         },
         {
+          "name": "feePayer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
           "name": "systemProgram",
           "isMut": false,
           "isSigner": false
@@ -67,6 +87,11 @@
           "isSigner": false
         },
         {
+          "name": "feePayer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
           "name": "authority",
           "isMut": false,
           "isSigner": true
@@ -80,6 +105,27 @@
           }
         }
       ]
+    },
+    {
+      "name": "mintPreset",
+      "accounts": [
+        {
+          "name": "preset",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
     }
   ],
   "accounts": [
@@ -103,6 +149,10 @@
           {
             "name": "imageUrl",
             "type": "string"
+          },
+          {
+            "name": "feePayer",
+            "type": "publicKey"
           },
           {
             "name": "authorities",
@@ -151,9 +201,31 @@
             "type": "string"
           },
           {
-            "name": "minterConfig",
+            "name": "decimals",
+            "type": "u8"
+          },
+          {
+            "name": "metadataConfig",
             "type": {
-              "defined": "MinterConfig"
+              "option": {
+                "defined": "MinterMetadataConfig"
+              }
+            }
+          },
+          {
+            "name": "interestConfig",
+            "type": {
+              "option": {
+                "defined": "MinterInterestConfig"
+              }
+            }
+          },
+          {
+            "name": "transferFeeConfig",
+            "type": {
+              "option": {
+                "defined": "MinterTransferFeeConfig"
+              }
             }
           }
         ]
@@ -177,10 +249,8 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "image",
-            "type": {
-              "option": "string"
-            }
+            "name": "imageUrl",
+            "type": "string"
           },
           {
             "name": "name",
@@ -205,9 +275,7 @@
           },
           {
             "name": "uri",
-            "type": {
-              "option": "string"
-            }
+            "type": "string"
           }
         ]
       }
@@ -219,13 +287,7 @@
         "fields": [
           {
             "name": "rate",
-            "type": "u64"
-          },
-          {
-            "name": "rateAuthority",
-            "type": {
-              "option": "publicKey"
-            }
+            "type": "i16"
           }
         ]
       }
@@ -236,12 +298,12 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "transferFeeRate",
-            "type": "u64"
+            "name": "transferFeeBasisPoints",
+            "type": "u16"
           },
           {
-            "name": "transferFeeAccount",
-            "type": "publicKey"
+            "name": "maxFeeRate",
+            "type": "u64"
           }
         ]
       }
@@ -258,16 +320,6 @@
           {
             "name": "decimals",
             "type": "u8"
-          },
-          {
-            "name": "feePayer",
-            "type": "publicKey"
-          },
-          {
-            "name": "freezeAuthority",
-            "type": {
-              "option": "publicKey"
-            }
           },
           {
             "name": "metadataConfig",
@@ -305,41 +357,46 @@
     },
     {
       "code": 6001,
+      "name": "InvalidFeePayer",
+      "msg": "Invalid Fee payer"
+    },
+    {
+      "code": 6002,
       "name": "UnAuthorized",
       "msg": "Account unauthorized to perform this action"
     },
     {
-      "code": 6002,
+      "code": 6003,
       "name": "AuthorityAlreadyExists",
       "msg": "Authority already exists"
     },
     {
-      "code": 6003,
+      "code": 6004,
       "name": "AuthorityNonExistant",
       "msg": "Authority does not exist"
     },
     {
-      "code": 6004,
+      "code": 6005,
       "name": "CannotRemoveSoloAuthority",
       "msg": "Cannot remove last remaining authority"
     },
     {
-      "code": 6005,
+      "code": 6006,
       "name": "InvalidPresetName",
       "msg": "Invalid preset name"
     },
     {
-      "code": 6006,
+      "code": 6007,
       "name": "InvalidPresetDescription",
       "msg": "Invalid preset description"
     },
     {
-      "code": 6007,
+      "code": 6008,
       "name": "InvalidPresetImageURL",
       "msg": "Invalid Image Url"
     },
     {
-      "code": 6008,
+      "code": 6009,
       "name": "MaxSizeReached",
       "msg": "Array reached max size"
     }

@@ -115,9 +115,34 @@ export type TokengatorPreset = {
           "isSigner": false
         },
         {
+          "name": "mint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authorityTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "feePayer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
           "name": "authority",
           "isMut": false,
           "isSigner": true
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
         },
         {
           "name": "systemProgram",
@@ -399,6 +424,16 @@ export type TokengatorPreset = {
       "code": 6009,
       "name": "MaxSizeReached",
       "msg": "Array reached max size"
+    },
+    {
+      "code": 6010,
+      "name": "InvalidMint",
+      "msg": "Invalid mint account passed"
+    },
+    {
+      "code": 6011,
+      "name": "InvalidTokenProgram",
+      "msg": "Token extensions program required"
     }
   ]
 };
@@ -520,9 +555,34 @@ export const IDL: TokengatorPreset = {
           "isSigner": false
         },
         {
+          "name": "mint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authorityTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "feePayer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
           "name": "authority",
           "isMut": false,
           "isSigner": true
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
         },
         {
           "name": "systemProgram",
@@ -804,6 +864,16 @@ export const IDL: TokengatorPreset = {
       "code": 6009,
       "name": "MaxSizeReached",
       "msg": "Array reached max size"
+    },
+    {
+      "code": 6010,
+      "name": "InvalidMint",
+      "msg": "Invalid mint account passed"
+    },
+    {
+      "code": 6011,
+      "name": "InvalidTokenProgram",
+      "msg": "Token extensions program required"
     }
   ]
 };

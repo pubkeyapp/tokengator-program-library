@@ -32,8 +32,6 @@ pub struct AddPresetAuthority<'info> {
 
 pub fn add_authority(ctx: Context<AddPresetAuthority>, args: AddPresetAuthorityArgs) -> Result<()> {
     let preset = &mut ctx.accounts.preset;
-
-    let authority = &mut ctx.accounts.authority;
     let fee_payer = &ctx.accounts.fee_payer;
     let system_program = &ctx.accounts.system_program;
 

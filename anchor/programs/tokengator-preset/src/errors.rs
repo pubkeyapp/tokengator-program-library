@@ -22,4 +22,8 @@ pub enum TokenGatorPresetError {
     InvalidPresetImageURL,
     #[msg("Array reached max size")]
     MaxSizeReached,
+    #[msg("Invalid mint account passed")]
+    InvalidMint,
+    #[msg("Token extensions program required")]
+    InvalidTokenProgram,
 }

@@ -15,11 +15,18 @@ pub struct AddPresetAuthority<'info> {
         &preset.name.as_bytes()
       ],
       bump = preset.bump,
+      has_one = fee_payer @ TokenGatorPresetError::UnAuthorized,
       constraint = preset.check_for_authority(&authority.key()) @ TokenGatorPresetError::UnAuthorized
     )]
     pub preset: Account<'info, Preset>,
 
     pub authority: Signer<'info>,
+
+    #[account(
+      mut,
+      constraint = fee_payer.key().ne(&authority.key()) @ TokenGatorPresetError::InvalidFeePayer
+    )]
+    pub fee_payer: Signer<'info>,
     pub system_program: Program<'info, System>,
 }
 
@@ -27,6 +34,7 @@ pub fn add_authority(ctx: Context<AddPresetAuthority>, args: AddPresetAuthorityA
     let preset = &mut ctx.accounts.preset;
 
     let authority = &mut ctx.accounts.authority;
+    let fee_payer = &ctx.accounts.fee_payer;
     let system_program = &ctx.accounts.system_program;
 
     let new_authority = args.new_authority;
@@ -43,7 +51,7 @@ pub fn add_authority(ctx: Context<AddPresetAuthority>, args: AddPresetAuthorityA
     realloc_account(
         preset.to_account_info(),
         new_preset_size,
-        authority.to_account_info(),
+        fee_payer.to_account_info(),
         system_program.to_account_info(),
     )?;
 

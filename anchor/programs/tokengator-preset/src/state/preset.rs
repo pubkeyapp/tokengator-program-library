@@ -15,6 +15,8 @@ pub struct Preset {
     pub description: String,
     // Image URL of the preset
     pub image_url: String,
+    // Remote fee payer
+    pub fee_payer: Pubkey,
     // Authorities that have been delegated to
     pub authorities: Vec<Pubkey>,
     // Identities user have added onto
@@ -33,6 +35,7 @@ impl Preset {
         MAX_NAME_SIZE + // name
         MAX_DESCRIPTION_SIZE + // description
         MAX_IMAGE_URL_SIZE + // image_url
+        32 + // fee_payer
         authorities_size + // authorities
         minter_config_size // minter_config
     }

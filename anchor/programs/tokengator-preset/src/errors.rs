@@ -4,6 +4,8 @@ use anchor_lang::prelude::*;
 pub enum TokenGatorPresetError {
     #[msg("Account not owned by program")]
     InvalidAccountOwner,
+    #[msg("Invalid Fee payer")]
+    InvalidFeePayer,
     #[msg("Account unauthorized to perform this action")]
     UnAuthorized,
     #[msg("Authority already exists")]

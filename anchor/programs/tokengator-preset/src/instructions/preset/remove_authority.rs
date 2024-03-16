@@ -14,9 +14,16 @@ pub struct RemovePresetAuthority<'info> {
         &preset.name.as_bytes()
       ],
       bump = preset.bump,
+      has_one = fee_payer @ TokenGatorPresetError::UnAuthorized,
       constraint = preset.check_for_authority(&authority.key()) @ TokenGatorPresetError::UnAuthorized
     )]
     pub preset: Account<'info, Preset>,
+
+    #[account(
+      mut,
+      constraint = fee_payer.key().ne(&authority.key()) @ TokenGatorPresetError::InvalidFeePayer
+    )]
+    pub fee_payer: Signer<'info>,
 
     pub authority: Signer<'info>,
 }

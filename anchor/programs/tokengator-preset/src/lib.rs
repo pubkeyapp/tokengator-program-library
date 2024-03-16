@@ -38,7 +38,7 @@ pub mod tokengator_preset {
         preset::mint(ctx)
     }
 
-    // pub fn close_preset(ctx: Context<ClosePreset>) -> Result<()> {
-    //     Ok(())
-    // }
+    pub fn remove_preset(ctx: Context<RemovePreset>) -> Result<()> {
+        preset::remove(ctx)
+    }
 }

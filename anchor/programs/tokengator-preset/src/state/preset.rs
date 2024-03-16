@@ -1,7 +1,6 @@
-use super::MinterConfig;
-
 use crate::constants::*;
 use crate::errors::*;
+use crate::state::*;
 use crate::utils::*;
 
 use anchor_lang::prelude::*;
@@ -23,11 +22,11 @@ pub struct Preset {
 }
 
 impl Preset {
-    pub fn size(authorities: &[Pubkey]) -> usize {
+    pub fn size(authorities: &[Pubkey], metadata_config: &Option<MinterMetadataConfig>) -> usize {
         let authorities_size = 4 + // Vector discriminator
         (authorities.len() * 32); // Total authorities pubkey length
 
-        let minter_config_size = MinterConfig::size();
+        let minter_config_size = MinterConfig::size(metadata_config);
 
         8 + // Anchor discriminator
         1 + // bump
@@ -72,7 +71,8 @@ impl Preset {
             TokenGatorPresetError::MaxSizeReached
         );
 
-        // self.minter_config.validate()?;
+        // Minter config
+        self.minter_config.validate()?;
 
         Ok(())
     }

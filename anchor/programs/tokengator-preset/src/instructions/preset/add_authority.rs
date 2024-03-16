@@ -38,7 +38,7 @@ pub fn add_authority(ctx: Context<AddPresetAuthority>, args: AddPresetAuthorityA
             .insert(new_authority_index, new_authority),
     }
 
-    let new_preset_size = Preset::size(&preset.authorities);
+    let new_preset_size = Preset::size(&preset.authorities, &preset.minter_config.metadata_config);
 
     realloc_account(
         preset.to_account_info(),

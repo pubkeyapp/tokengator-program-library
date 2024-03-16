@@ -34,7 +34,11 @@ pub mod tokengator_preset {
         preset::remove_authority(ctx, args)
     }
 
-    pub fn mint_preset(ctx: Context<MintPreset>) -> Result<()> {
-        Ok(())
-    }
+    // pub fn mint_preset(ctx: Context<MintPreset>) -> Result<()> {
+    //     preset::mint(ctx)
+    // }
+
+    // pub fn close_preset(ctx: Context<ClosePreset>) -> Result<()> {
+    //     Ok(())
+    // }
 }

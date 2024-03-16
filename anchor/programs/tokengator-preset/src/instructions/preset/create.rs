@@ -1,7 +1,6 @@
 use anchor_lang::prelude::*;
 
 use crate::constants::*;
-use crate::errors::*;
 use crate::state::*;
 
 #[derive(Accounts)]
@@ -10,7 +9,7 @@ pub struct CreatePreset<'info> {
     #[account(
       init,
       payer = authority,
-      space = Preset::size(&[authority.key()]),
+      space = Preset::size(&[authority.key()], &args.minter_config.metadata_config),
       seeds = [
         PREFIX,
         PRESET,

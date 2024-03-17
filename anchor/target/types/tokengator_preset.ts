@@ -11,17 +11,17 @@ export type TokengatorPreset = {
           "isSigner": false
         },
         {
+          "name": "mint",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
           "name": "feePayer",
           "isMut": true,
           "isSigner": true
         },
         {
           "name": "authority",
-          "isMut": false,
-          "isSigner": true
-        },
-        {
-          "name": "mint",
           "isMut": false,
           "isSigner": true
         },
@@ -475,6 +475,11 @@ export type TokengatorPreset = {
       "code": 6011,
       "name": "InvalidTokenProgram",
       "msg": "Token extensions program required"
+    },
+    {
+      "code": 6012,
+      "name": "CannotRemoveNonZeroSupplyPreset",
+      "msg": "Cannot remove preset of non-zero supply"
     }
   ]
 };
@@ -492,17 +497,17 @@ export const IDL: TokengatorPreset = {
           "isSigner": false
         },
         {
+          "name": "mint",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
           "name": "feePayer",
           "isMut": true,
           "isSigner": true
         },
         {
           "name": "authority",
-          "isMut": false,
-          "isSigner": true
-        },
-        {
-          "name": "mint",
           "isMut": false,
           "isSigner": true
         },
@@ -956,6 +961,11 @@ export const IDL: TokengatorPreset = {
       "code": 6011,
       "name": "InvalidTokenProgram",
       "msg": "Token extensions program required"
+    },
+    {
+      "code": 6012,
+      "name": "CannotRemoveNonZeroSupplyPreset",
+      "msg": "Cannot remove preset of non-zero supply"
     }
   ]
 };

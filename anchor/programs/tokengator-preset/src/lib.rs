@@ -10,7 +10,7 @@ pub mod utils;
 
 pub use instructions::*;
 
-declare_id!("TPLxuiUYiDdJVenaSEhshrLP9EF83MNzKhiHNoFjCPM");
+declare_id!("TPLx9nrMKbk3uQoHHL2pxepyYx4A4RH58EAPqsYE9ir");
 
 #[program]
 pub mod tokengator_preset {

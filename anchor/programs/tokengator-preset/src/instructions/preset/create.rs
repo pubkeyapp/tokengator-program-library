@@ -7,6 +7,8 @@ use anchor_spl::token_2022::{
     spl_token_2022::{extension::*, state::Mint},
     InitializeMint2, InitializeMintCloseAuthority, Token2022,
 };
+use spl_pod::optional_keys::OptionalNonZeroPubkey;
+use spl_token_metadata_interface::state::TokenMetadata;
 
 use crate::errors::*;
 use crate::state::*;
@@ -28,13 +30,15 @@ pub struct CreatePreset<'info> {
     )]
     pub preset: Account<'info, Preset>,
 
+    #[account(mut)]
+    pub mint: Signer<'info>,
+
     #[account(
       mut,
       constraint = fee_payer.key().ne(&authority.key()) @ TokenGatorPresetError::InvalidFeePayer
     )]
     pub fee_payer: Signer<'info>,
     pub authority: Signer<'info>,
-    pub mint: Signer<'info>,
 
     pub token_extensions_program: Program<'info, Token2022>,
     pub system_program: Program<'info, System>,
@@ -97,7 +101,34 @@ pub fn create(ctx: Context<CreatePreset>, args: CreatePresetArgs) -> Result<()> 
     }
 
     let mint_size = ExtensionType::try_calculate_account_len::<Mint>(&mint_extension_types)?;
-    let rent_lamports = Rent::get()?.minimum_balance(mint_size);
+
+    let metadata_size = if let Some(metadata_config) = metadata_config.clone() {
+        let additional_metdata: Vec<(String, String)> =
+            if let Some(additional_metadata) = metadata_config.metadata {
+                let mut metadata_tuple: Vec<(String, String)> = vec![];
+                for metadata_pair in additional_metadata {
+                    metadata_tuple.push((metadata_pair[0].clone(), metadata_pair[1].clone()));
+                }
+                metadata_tuple
+            } else {
+                vec![]
+            };
+
+        let metadata = TokenMetadata {
+            update_authority: OptionalNonZeroPubkey::try_from(Some(fee_payer.key())).unwrap(),
+            mint: mint.key(),
+            name: metadata_config.name,
+            symbol: metadata_config.symbol,
+            uri: metadata_config.uri,
+            additional_metadata: additional_metdata,
+        };
+
+        metadata.tlv_size_of()
+    } else {
+        Ok(0)
+    }?;
+
+    let rent_lamports = Rent::get()?.minimum_balance(mint_size + metadata_size);
 
     system_program::create_account(
         CpiContext::new(
@@ -214,9 +245,6 @@ pub fn create(ctx: Context<CreatePreset>, args: CreatePresetArgs) -> Result<()> 
 
         if let Some(metadata) = metadata {
             for field_value_pair in metadata {
-                let field = field_value_pair[0].clone();
-                let value = field_value_pair[1].clone();
-
                 update_metadata_field(
                     CpiContext::new(
                         token_extensions_program.to_account_info(),
@@ -225,8 +253,8 @@ pub fn create(ctx: Context<CreatePreset>, args: CreatePresetArgs) -> Result<()> 
                             update_authority: fee_payer.to_account_info(),
                         },
                     ),
-                    field,
-                    value,
+                    field_value_pair[0].clone(),
+                    field_value_pair[1].clone(),
                 )?;
             }
         }

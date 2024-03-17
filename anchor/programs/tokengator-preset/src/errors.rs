@@ -26,4 +26,6 @@ pub enum TokenGatorPresetError {
     InvalidMint,
     #[msg("Token extensions program required")]
     InvalidTokenProgram,
+    #[msg("Cannot remove preset of non-zero supply")]
+    CannotRemoveNonZeroSupplyPreset,
 }

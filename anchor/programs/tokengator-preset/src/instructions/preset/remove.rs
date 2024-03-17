@@ -13,7 +13,6 @@ use crate::state::*;
 pub struct RemovePreset<'info> {
     #[account(
       mut,
-      close = fee_payer,
       seeds = [
         PREFIX,
         PRESET,
@@ -31,6 +30,7 @@ pub struct RemovePreset<'info> {
       mint::authority = fee_payer,
       mint::freeze_authority = fee_payer,
       mint::token_program = token_program,
+      constraint = mint.supply == 0 @ TokenGatorPresetError::CannotRemoveNonZeroSupplyPreset
     )]
     pub mint: InterfaceAccount<'info, Mint>,
 
@@ -48,6 +48,7 @@ pub struct RemovePreset<'info> {
 
 pub fn remove(ctx: Context<RemovePreset>) -> Result<()> {
     let fee_payer = &ctx.accounts.fee_payer;
+    let preset = &ctx.accounts.preset;
 
     let mint = &ctx.accounts.mint;
     let token_extensions_program = &ctx.accounts.token_program;
@@ -60,6 +61,8 @@ pub fn remove(ctx: Context<RemovePreset>) -> Result<()> {
             destination: fee_payer.to_account_info(),
         },
     ))?;
+
+    preset.close(fee_payer.to_account_info())?;
 
     Ok(())
 }

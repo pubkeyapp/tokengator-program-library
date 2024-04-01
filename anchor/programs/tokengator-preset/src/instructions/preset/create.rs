@@ -74,7 +74,7 @@ pub fn create(ctx: Context<CreatePreset>, args: CreatePresetArgs) -> Result<()> 
         bump: ctx.bumps.preset,
         authorities: vec![authority.key()],
         description: args.description,
-        name: args.name,
+        name: args.name.clone(),
         image_url: args.image_url,
         fee_payer: ctx.accounts.fee_payer.key(),
         minter_config,
@@ -115,7 +115,7 @@ pub fn create(ctx: Context<CreatePreset>, args: CreatePresetArgs) -> Result<()> 
             };
 
         let metadata = TokenMetadata {
-            update_authority: OptionalNonZeroPubkey::try_from(Some(fee_payer.key())).unwrap(),
+            update_authority: OptionalNonZeroPubkey::try_from(Some(preset.key())).unwrap(),
             mint: mint.key(),
             name: metadata_config.name,
             symbol: metadata_config.symbol,
@@ -151,7 +151,7 @@ pub fn create(ctx: Context<CreatePreset>, args: CreatePresetArgs) -> Result<()> 
                 mint: mint.to_account_info(),
             },
         ),
-        Some(fee_payer.key),
+        Some(&preset.key()),
     )?;
 
     initialize_mint_non_transferable(CpiContext::new(
@@ -170,7 +170,7 @@ pub fn create(ctx: Context<CreatePreset>, args: CreatePresetArgs) -> Result<()> 
                     mint: mint.to_account_info(),
                 },
             ),
-            Some(fee_payer.key()),
+            Some(preset.key()),
             interest_config.rate,
         )?;
     }
@@ -185,8 +185,8 @@ pub fn create(ctx: Context<CreatePreset>, args: CreatePresetArgs) -> Result<()> 
                     mint: mint.to_account_info(),
                 },
             ),
-            Some(fee_payer.key),
-            Some(fee_payer.key),
+            Some(&preset.key()),
+            Some(&preset.key()),
             transfer_fee_config.transfer_fee_basis_points,
             transfer_fee_config.max_fee_rate,
         )?;
@@ -200,22 +200,24 @@ pub fn create(ctx: Context<CreatePreset>, args: CreatePresetArgs) -> Result<()> 
                     mint: mint.to_account_info(),
                 },
             ),
-            Some(fee_payer.key()),
+            Some(preset.key()),
             Some(mint.key()),
         )?;
     }
 
+    let signer_seeds: &[&[&[u8]]] = &[&[PREFIX, PRESET, preset.name.as_bytes(), &[preset.bump]]];
     // 4. Initializing mint
     initialize_mint2(
-        CpiContext::new(
+        CpiContext::new_with_signer(
             token_extensions_program.to_account_info(),
             InitializeMint2 {
                 mint: mint.to_account_info(),
             },
+            signer_seeds,
         ),
         args.decimals,
-        fee_payer.key,
-        Some(fee_payer.key),
+        &preset.key(),
+        Some(&preset.key()),
     )?;
 
     // 5. Initializing metadata and adding additional metadata fields
@@ -229,14 +231,15 @@ pub fn create(ctx: Context<CreatePreset>, args: CreatePresetArgs) -> Result<()> 
         } = metadata_config.unwrap();
 
         intialize_metadata(
-            CpiContext::new(
+            CpiContext::new_with_signer(
                 token_extensions_program.to_account_info(),
                 InitializeMetadata {
                     metadata: mint.to_account_info(),
                     mint: mint.to_account_info(),
-                    mint_authority: fee_payer.to_account_info(),
-                    update_authority: fee_payer.to_account_info(),
+                    mint_authority: preset.to_account_info(),
+                    update_authority: preset.to_account_info(),
                 },
+                signer_seeds,
             ),
             name,
             symbol,
@@ -246,12 +249,13 @@ pub fn create(ctx: Context<CreatePreset>, args: CreatePresetArgs) -> Result<()> 
         if let Some(metadata) = metadata {
             for field_value_pair in metadata {
                 update_metadata_field(
-                    CpiContext::new(
+                    CpiContext::new_with_signer(
                         token_extensions_program.to_account_info(),
                         UpdateMetadataField {
                             metadata: mint.to_account_info(),
-                            update_authority: fee_payer.to_account_info(),
+                            update_authority: preset.to_account_info(),
                         },
+                        signer_seeds,
                     ),
                     field_value_pair[0].clone(),
                     field_value_pair[1].clone(),

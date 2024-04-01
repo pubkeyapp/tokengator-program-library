@@ -27,8 +27,8 @@ pub struct RemovePreset<'info> {
 
     #[account(
       mut,
-      mint::authority = fee_payer,
-      mint::freeze_authority = fee_payer,
+      mint::authority = preset,
+      mint::freeze_authority = preset,
       mint::token_program = token_program,
       constraint = mint.supply == 0 @ TokenGatorPresetError::CannotRemoveNonZeroSupplyPreset
     )]
@@ -53,13 +53,16 @@ pub fn remove(ctx: Context<RemovePreset>) -> Result<()> {
     let mint = &ctx.accounts.mint;
     let token_extensions_program = &ctx.accounts.token_program;
 
-    close_account(CpiContext::new(
+    let signer_seeds: &[&[&[u8]]] = &[&[PREFIX, PRESET, preset.name.as_bytes(), &[preset.bump]]];
+
+    close_account(CpiContext::new_with_signer(
         token_extensions_program.to_account_info(),
         CloseAccount {
             account: mint.to_account_info(),
-            authority: fee_payer.to_account_info(),
+            authority: preset.to_account_info(),
             destination: fee_payer.to_account_info(),
         },
+        signer_seeds,
     ))?;
 
     preset.close(fee_payer.to_account_info())?;

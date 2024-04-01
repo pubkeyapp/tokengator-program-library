@@ -114,6 +114,8 @@ describe('tokengator-preset', () => {
 
     // Mint
     expect(mintData.decimals).toStrictEqual(businessVisaPreset.decimals)
+    expect(mintData.mintAuthority).toStrictEqual(preset)
+    expect(mintData.freezeAuthority).toStrictEqual(preset)
     expect(mintData.supply).toStrictEqual(0n)
 
     // Metadata
@@ -122,7 +124,7 @@ describe('tokengator-preset', () => {
     expect(metadataData?.symbol).toStrictEqual(businessVisaPreset.metadataConfig.symbol)
     expect(metadataData?.uri).toStrictEqual(businessVisaPreset.metadataConfig.uri)
     expect(metadataData?.mint).toStrictEqual(mintKeypair.publicKey)
-    expect(metadataData?.updateAuthority).toStrictEqual(remoteFeePayer.publicKey)
+    expect(metadataData?.updateAuthority).toStrictEqual(preset)
     expect(metadataData?.additionalMetadata).toEqual([
       ['status', 'active'],
       ['expiresAt', expiresAt],
@@ -168,7 +170,7 @@ describe('tokengator-preset', () => {
         systemProgram: SystemProgram.programId,
       })
       .signers([authority2])
-      .rpc({ commitment: 'confirmed' })
+      .rpc({ commitment: 'confirmed', skipPreflight: true })
 
     const tokenAccountData = await getAccount(
       provider.connection,
@@ -229,5 +231,10 @@ describe('tokengator-preset', () => {
       ])
       .signers([authority2, authority])
       .rpc({ skipPreflight: true })
+
+    const presetData = await program.account.preset.fetchNullable(preset)
+    const mintData = await provider.connection.getAccountInfo(mintKeypair.publicKey)
+    expect(mintData).toBeNull()
+    expect(presetData).toBeNull()
   })
 })

@@ -112,7 +112,7 @@ pub fn intialize_metadata<'info>(
         uri,
     );
 
-    solana_program::program::invoke(
+    solana_program::program::invoke_signed(
         &ix,
         &[
             ctx.accounts.metadata,
@@ -120,6 +120,7 @@ pub fn intialize_metadata<'info>(
             ctx.accounts.mint,
             ctx.accounts.mint_authority,
         ],
+        ctx.signer_seeds,
     )
     .map_err(Into::into)
 }
@@ -145,6 +146,10 @@ pub fn update_metadata_field<'info>(
         value,
     );
 
-    solana_program::program::invoke(&ix, &[ctx.accounts.metadata, ctx.accounts.update_authority])
-        .map_err(Into::into)
+    solana_program::program::invoke_signed(
+        &ix,
+        &[ctx.accounts.metadata, ctx.accounts.update_authority],
+        ctx.signer_seeds,
+    )
+    .map_err(Into::into)
 }

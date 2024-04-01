@@ -26,8 +26,8 @@ pub struct MintPreset<'info> {
 
     #[account(
       mut,
-      mint::authority = fee_payer,
-      mint::freeze_authority = fee_payer,
+      mint::authority = preset,
+      mint::freeze_authority = preset,
       mint::token_program = token_program,
     )]
     pub mint: InterfaceAccount<'info, Mint>,
@@ -54,7 +54,7 @@ pub struct MintPreset<'info> {
 }
 
 pub fn mint(ctx: Context<MintPreset>) -> Result<()> {
-    let fee_payer = &ctx.accounts.fee_payer;
+    let preset = &ctx.accounts.preset;
 
     let mint = &ctx.accounts.mint;
     let destination_token_account = &ctx.accounts.authority_token_account;
@@ -64,14 +64,17 @@ pub fn mint(ctx: Context<MintPreset>) -> Result<()> {
         .checked_mul(10u64.checked_pow(mint.decimals.into()).unwrap())
         .unwrap();
 
+    let signer_seeds: &[&[&[u8]]] = &[&[PREFIX, PRESET, preset.name.as_bytes(), &[preset.bump]]];
+
     mint_to(
-        CpiContext::new(
+        CpiContext::new_with_signer(
             token_extensions_program.to_account_info(),
             MintTo {
                 mint: mint.to_account_info(),
-                authority: fee_payer.to_account_info(),
+                authority: preset.to_account_info(),
                 to: destination_token_account.to_account_info(),
             },
+            signer_seeds,
         ),
         amount_with_decimals,
     )?;

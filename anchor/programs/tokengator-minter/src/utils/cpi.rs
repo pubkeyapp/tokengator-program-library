@@ -1,6 +1,23 @@
 use anchor_lang::{prelude::*, solana_program};
-use anchor_spl::token_2022::spl_token_2022::{extension::*, instruction::*};
+use anchor_spl::token_2022::spl_token_2022::instruction::{
+    initialize_permanent_delegate as init_permanent_delegate, *,
+};
+use spl_token_2022::extension::*;
 use spl_token_metadata_interface::state::Field;
+
+#[derive(Accounts)]
+pub struct InitializePermanentDelegate<'info> {
+    /// CHECK: CPI Account
+    pub mint: AccountInfo<'info>,
+}
+
+pub fn initialize_permanent_delegate<'info>(
+    ctx: CpiContext<'_, '_, '_, 'info, InitializePermanentDelegate<'info>>,
+    delegate: &Pubkey,
+) -> Result<()> {
+    let ix = init_permanent_delegate(ctx.program.key, ctx.accounts.mint.key, delegate)?;
+    solana_program::program::invoke(&ix, &[ctx.accounts.mint]).map_err(Into::into)
+}
 
 #[derive(Accounts)]
 pub struct InitializeMintNonTransferrable<'info> {
@@ -53,6 +70,27 @@ pub fn initialize_metadata_pointer<'info>(
         ctx.accounts.mint.key,
         authority,
         metadata_address,
+    )?;
+
+    solana_program::program::invoke(&ix, &[ctx.accounts.mint]).map_err(Into::into)
+}
+
+#[derive(Accounts)]
+pub struct InitializeGroupPointer<'info> {
+    /// CHECK: CPI Account
+    pub mint: AccountInfo<'info>,
+}
+
+pub fn initialize_group_pointer<'info>(
+    ctx: CpiContext<'_, '_, '_, 'info, InitializeGroupPointer<'info>>,
+    authority: Option<Pubkey>,
+    group_address: Option<Pubkey>,
+) -> Result<()> {
+    let ix = group_pointer::instruction::initialize(
+        ctx.program.key,
+        ctx.accounts.mint.key,
+        authority,
+        group_address,
     )?;
 
     solana_program::program::invoke(&ix, &[ctx.accounts.mint]).map_err(Into::into)
@@ -117,6 +155,42 @@ pub fn intialize_metadata<'info>(
         &[
             ctx.accounts.metadata,
             ctx.accounts.update_authority,
+            ctx.accounts.mint,
+            ctx.accounts.mint_authority,
+        ],
+        ctx.signer_seeds,
+    )
+    .map_err(Into::into)
+}
+
+#[derive(Accounts)]
+pub struct InitializeGroup<'info> {
+    /// CHECK: CPI Account
+    pub group: AccountInfo<'info>,
+    /// CHECK: CPI Account
+    pub mint: AccountInfo<'info>,
+    /// CHECK: CPI Account
+    pub mint_authority: AccountInfo<'info>,
+}
+
+pub fn initialize_group<'info>(
+    ctx: CpiContext<'_, '_, '_, 'info, InitializeGroup<'info>>,
+    update_authority: Option<Pubkey>,
+    max_size: u32,
+) -> Result<()> {
+    let ix = spl_token_group_interface::instruction::initialize_group(
+        ctx.program.key,
+        ctx.accounts.group.key,
+        ctx.accounts.mint.key,
+        ctx.accounts.mint_authority.key,
+        update_authority,
+        max_size,
+    );
+
+    solana_program::program::invoke_signed(
+        &ix,
+        &[
+            ctx.accounts.group,
             ctx.accounts.mint,
             ctx.accounts.mint_authority,
         ],

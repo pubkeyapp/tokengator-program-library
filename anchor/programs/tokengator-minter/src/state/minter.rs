@@ -6,29 +6,36 @@ use crate::utils::*;
 use anchor_lang::prelude::*;
 
 #[account]
-pub struct Preset {
+pub struct Minter {
     // Bump of the PDA
     pub bump: u8,
-    // Name of the preset
+    // Name of the Minter
     pub name: String,
-    // Description about the preset
+    // Description about the Minter
     pub description: String,
-    // Image URL of the preset
+    // Image URL of the Minter
     pub image_url: String,
     // Remote fee payer
     pub fee_payer: Pubkey,
     // Authorities that have been delegated to
     pub authorities: Vec<Pubkey>,
+    // Payment configuration for this minter instance
+    pub payment_config: PaymentConfig,
     // Identities user have added onto
     pub minter_config: MinterConfig,
 }
 
-impl Preset {
-    pub fn size(authorities: &[Pubkey], metadata_config: &Option<MinterMetadataConfig>) -> usize {
+impl Minter {
+    pub fn size(
+        authorities: &[Pubkey],
+        application_config: &MinterApplicationConfig,
+        metadata_config: &MinterMetadataConfig,
+    ) -> usize {
         let authorities_size = 4 + // Vector discriminator
         (authorities.len() * 32); // Total authorities pubkey length
 
-        let minter_config_size = MinterConfig::size(metadata_config);
+        let payment_config_size = PaymentConfig::size();
+        let minter_config_size = MinterConfig::size(application_config, metadata_config);
 
         8 + // Anchor discriminator
         1 + // bump
@@ -37,6 +44,8 @@ impl Preset {
         MAX_IMAGE_URL_SIZE + // image_url
         32 + // fee_payer
         authorities_size + // authorities
+        8 + // payment_expires_at
+        payment_config_size + // payment_config
         minter_config_size // minter_config
     }
 
@@ -48,31 +57,34 @@ impl Preset {
         // Name
         require!(
             is_valid_username(&self.name),
-            TokenGatorPresetError::InvalidPresetName
+            TokenGatorMinterError::InvalidMinterName
         );
 
         // Description
         require!(
             description_len > 10 && description_len <= MAX_DESCRIPTION_SIZE,
-            TokenGatorPresetError::InvalidPresetDescription
+            TokenGatorMinterError::InvalidMinterDescription
         );
 
         // Image URL
         require!(
             is_valid_url(&self.image_url),
-            TokenGatorPresetError::InvalidPresetImageURL
+            TokenGatorMinterError::InvalidMinterImageURL
         );
 
         require!(
             image_url_len > 0 && image_url_len <= MAX_IMAGE_URL_SIZE,
-            TokenGatorPresetError::InvalidPresetImageURL
+            TokenGatorMinterError::InvalidMinterImageURL
         );
 
         // Authorities
         require!(
             authorities_len <= MAX_VECTOR_SIZE.into(),
-            TokenGatorPresetError::MaxSizeReached
+            TokenGatorMinterError::MaxSizeReached
         );
+
+        // Payment config
+        self.payment_config.validate()?;
 
         // Minter config
         self.minter_config.validate()?;

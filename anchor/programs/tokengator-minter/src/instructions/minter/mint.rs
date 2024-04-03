@@ -14,20 +14,20 @@ pub struct MintPreset<'info> {
     #[account(
       seeds = [
         PREFIX,
-        PRESET,
-        &preset.name.as_bytes()
+        MINTER,
+        &minter.name.as_bytes()
       ],
-      bump = preset.bump,
-      has_one = fee_payer @ TokenGatorPresetError::UnAuthorized,
-      constraint = preset.check_for_authority(&authority.key()) @ TokenGatorPresetError::UnAuthorized,
-      constraint = preset.minter_config.mint.eq(&mint.key()) @ TokenGatorPresetError::InvalidMint
+      bump = minter.bump,
+      has_one = fee_payer @ TokenGatorMinterError::UnAuthorized,
+      constraint = minter.check_for_authority(&authority.key()) @ TokenGatorMinterError::UnAuthorized,
+      constraint = minter.minter_config.mint.eq(&mint.key()) @ TokenGatorMinterError::InvalidMint
     )]
-    pub preset: Account<'info, Preset>,
+    pub minter: Account<'info, Minter>,
 
     #[account(
       mut,
-      mint::authority = preset,
-      mint::freeze_authority = preset,
+      mint::authority = minter,
+      mint::freeze_authority = minter,
       mint::token_program = token_program,
     )]
     pub mint: InterfaceAccount<'info, Mint>,
@@ -46,7 +46,7 @@ pub struct MintPreset<'info> {
     pub authority: Signer<'info>,
 
     #[account(
-      constraint = token_program.key().eq(&TOKEN_EXTENSIONS_PROGRAM_ID) @ TokenGatorPresetError::InvalidTokenProgram
+      constraint = token_program.key().eq(&TOKEN_EXTENSIONS_PROGRAM_ID) @ TokenGatorMinterError::InvalidTokenProgram
     )]
     pub token_program: Program<'info, Token2022>,
     pub associated_token_program: Program<'info, AssociatedToken>,
@@ -54,7 +54,7 @@ pub struct MintPreset<'info> {
 }
 
 pub fn mint(ctx: Context<MintPreset>) -> Result<()> {
-    let preset = &ctx.accounts.preset;
+    let minter = &ctx.accounts.minter;
 
     let mint = &ctx.accounts.mint;
     let destination_token_account = &ctx.accounts.authority_token_account;
@@ -64,14 +64,14 @@ pub fn mint(ctx: Context<MintPreset>) -> Result<()> {
         .checked_mul(10u64.checked_pow(mint.decimals.into()).unwrap())
         .unwrap();
 
-    let signer_seeds: &[&[&[u8]]] = &[&[PREFIX, PRESET, preset.name.as_bytes(), &[preset.bump]]];
+    let signer_seeds: &[&[&[u8]]] = &[&[PREFIX, MINTER, minter.name.as_bytes(), &[minter.bump]]];
 
     mint_to(
         CpiContext::new_with_signer(
             token_extensions_program.to_account_info(),
             MintTo {
                 mint: mint.to_account_info(),
-                authority: preset.to_account_info(),
+                authority: minter.to_account_info(),
                 to: destination_token_account.to_account_info(),
             },
             signer_seeds,

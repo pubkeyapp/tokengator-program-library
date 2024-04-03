@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 #[error_code]
-pub enum TokenGatorPresetError {
+pub enum TokenGatorMinterError {
     #[msg("Account not owned by program")]
     InvalidAccountOwner,
     #[msg("Invalid Fee payer")]
@@ -14,18 +14,20 @@ pub enum TokenGatorPresetError {
     AuthorityNonExistant,
     #[msg("Cannot remove last remaining authority")]
     CannotRemoveSoloAuthority,
-    #[msg("Invalid preset name")]
-    InvalidPresetName,
-    #[msg("Invalid preset description")]
-    InvalidPresetDescription,
+    #[msg("Invalid minter token account")]
+    InvalidMinterTokenAccount,
+    #[msg("Invalid minter name")]
+    InvalidMinterName,
+    #[msg("Invalid minter description")]
+    InvalidMinterDescription,
     #[msg("Invalid Image Url")]
-    InvalidPresetImageURL,
+    InvalidMinterImageURL,
     #[msg("Array reached max size")]
     MaxSizeReached,
     #[msg("Invalid mint account passed")]
     InvalidMint,
     #[msg("Token extensions program required")]
     InvalidTokenProgram,
-    #[msg("Cannot remove preset of non-zero supply")]
-    CannotRemoveNonZeroSupplyPreset,
+    #[msg("Cannot remove minter of non-zero supply")]
+    CannotRemoveNonZeroSupplyMinter,
 }

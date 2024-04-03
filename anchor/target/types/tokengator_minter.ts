@@ -1,12 +1,22 @@
-export type TokengatorPreset = {
+export type TokengatorMinter = {
   "version": "0.1.0",
-  "name": "tokengator_preset",
+  "name": "tokengator_minter",
   "instructions": [
     {
-      "name": "createPreset",
+      "name": "createMinter",
       "accounts": [
         {
-          "name": "preset",
+          "name": "group",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "minter",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "minterTokenAccount",
           "isMut": true,
           "isSigner": false
         },
@@ -14,115 +24,6 @@ export type TokengatorPreset = {
           "name": "mint",
           "isMut": true,
           "isSigner": true
-        },
-        {
-          "name": "feePayer",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "authority",
-          "isMut": false,
-          "isSigner": true
-        },
-        {
-          "name": "tokenExtensionsProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "args",
-          "type": {
-            "defined": "CreatePresetArgs"
-          }
-        }
-      ]
-    },
-    {
-      "name": "addPresetAuthority",
-      "accounts": [
-        {
-          "name": "preset",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "authority",
-          "isMut": false,
-          "isSigner": true
-        },
-        {
-          "name": "feePayer",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "args",
-          "type": {
-            "defined": "AddPresetAuthorityArgs"
-          }
-        }
-      ]
-    },
-    {
-      "name": "removePresetAuthority",
-      "accounts": [
-        {
-          "name": "preset",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "feePayer",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "authority",
-          "isMut": false,
-          "isSigner": true
-        }
-      ],
-      "args": [
-        {
-          "name": "args",
-          "type": {
-            "defined": "RemovePresetAuthorityArgs"
-          }
-        }
-      ]
-    },
-    {
-      "name": "mintPreset",
-      "accounts": [
-        {
-          "name": "preset",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "mint",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "authorityTokenAccount",
-          "isMut": true,
-          "isSigner": false
         },
         {
           "name": "feePayer",
@@ -150,53 +51,43 @@ export type TokengatorPreset = {
           "isSigner": false
         }
       ],
-      "args": []
-    },
-    {
-      "name": "removePreset",
-      "accounts": [
+      "args": [
         {
-          "name": "preset",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "mint",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "feePayer",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "authority",
-          "isMut": false,
-          "isSigner": true
-        },
-        {
-          "name": "tokenProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "associatedTokenProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
+          "name": "args",
+          "type": {
+            "defined": "CreateMinterArgs"
+          }
         }
-      ],
-      "args": []
+      ]
     }
   ],
   "accounts": [
     {
-      "name": "preset",
+      "name": "group",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "updateAuthority",
+            "type": "publicKey"
+          },
+          {
+            "name": "mint",
+            "type": "publicKey"
+          },
+          {
+            "name": "size",
+            "type": "u32"
+          },
+          {
+            "name": "maxSize",
+            "type": "u32"
+          }
+        ]
+      }
+    },
+    {
+      "name": "minter",
       "type": {
         "kind": "struct",
         "fields": [
@@ -227,6 +118,12 @@ export type TokengatorPreset = {
             }
           },
           {
+            "name": "paymentConfig",
+            "type": {
+              "defined": "PaymentConfig"
+            }
+          },
+          {
             "name": "minterConfig",
             "type": {
               "defined": "MinterConfig"
@@ -250,7 +147,7 @@ export type TokengatorPreset = {
       }
     },
     {
-      "name": "CreatePresetArgs",
+      "name": "CreateMinterArgs",
       "type": {
         "kind": "struct",
         "fields": [
@@ -267,15 +164,21 @@ export type TokengatorPreset = {
             "type": "string"
           },
           {
-            "name": "decimals",
-            "type": "u8"
+            "name": "paymentConfig",
+            "type": {
+              "defined": "PaymentConfig"
+            }
+          },
+          {
+            "name": "applicationConfig",
+            "type": {
+              "defined": "MinterApplicationConfig"
+            }
           },
           {
             "name": "metadataConfig",
             "type": {
-              "option": {
-                "defined": "MinterMetadataConfig"
-              }
+              "defined": "MinterMetadataConfig"
             }
           },
           {
@@ -310,14 +213,38 @@ export type TokengatorPreset = {
       }
     },
     {
-      "name": "MinterMetadataConfig",
+      "name": "PaymentConfig",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "imageUrl",
-            "type": "string"
+            "name": "amount",
+            "type": "u16"
           },
+          {
+            "name": "price",
+            "type": "u64"
+          },
+          {
+            "name": "mint",
+            "type": "publicKey"
+          },
+          {
+            "name": "days",
+            "type": "u8"
+          },
+          {
+            "name": "expiresAt",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MinterMetadataConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
           {
             "name": "name",
             "type": "string"
@@ -375,6 +302,28 @@ export type TokengatorPreset = {
       }
     },
     {
+      "name": "MinterApplicationConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "identities",
+            "type": {
+              "vec": {
+                "defined": "IdentityProvider"
+              }
+            }
+          },
+          {
+            "name": "paymentConfig",
+            "type": {
+              "defined": "PaymentConfig"
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "MinterConfig",
       "type": {
         "kind": "struct",
@@ -384,15 +333,15 @@ export type TokengatorPreset = {
             "type": "publicKey"
           },
           {
-            "name": "decimals",
-            "type": "u8"
+            "name": "applicationConfig",
+            "type": {
+              "defined": "MinterApplicationConfig"
+            }
           },
           {
             "name": "metadataConfig",
             "type": {
-              "option": {
-                "defined": "MinterMetadataConfig"
-              }
+              "defined": "MinterMetadataConfig"
             }
           },
           {
@@ -410,6 +359,26 @@ export type TokengatorPreset = {
                 "defined": "MinterTransferFeeConfig"
               }
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "IdentityProvider",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Discord"
+          },
+          {
+            "name": "GitHub"
+          },
+          {
+            "name": "Google"
+          },
+          {
+            "name": "Twitter"
           }
         ]
       }
@@ -448,51 +417,66 @@ export type TokengatorPreset = {
     },
     {
       "code": 6006,
-      "name": "InvalidPresetName",
-      "msg": "Invalid preset name"
+      "name": "InvalidMinterTokenAccount",
+      "msg": "Invalid minter token account"
     },
     {
       "code": 6007,
-      "name": "InvalidPresetDescription",
-      "msg": "Invalid preset description"
+      "name": "InvalidMinterName",
+      "msg": "Invalid minter name"
     },
     {
       "code": 6008,
-      "name": "InvalidPresetImageURL",
-      "msg": "Invalid Image Url"
+      "name": "InvalidMinterDescription",
+      "msg": "Invalid minter description"
     },
     {
       "code": 6009,
+      "name": "InvalidMinterImageURL",
+      "msg": "Invalid Image Url"
+    },
+    {
+      "code": 6010,
       "name": "MaxSizeReached",
       "msg": "Array reached max size"
     },
     {
-      "code": 6010,
+      "code": 6011,
       "name": "InvalidMint",
       "msg": "Invalid mint account passed"
     },
     {
-      "code": 6011,
+      "code": 6012,
       "name": "InvalidTokenProgram",
       "msg": "Token extensions program required"
     },
     {
-      "code": 6012,
-      "name": "CannotRemoveNonZeroSupplyPreset",
-      "msg": "Cannot remove preset of non-zero supply"
+      "code": 6013,
+      "name": "CannotRemoveNonZeroSupplyMinter",
+      "msg": "Cannot remove minter of non-zero supply"
     }
   ]
 };
 
-export const IDL: TokengatorPreset = {
+export const IDL: TokengatorMinter = {
   "version": "0.1.0",
-  "name": "tokengator_preset",
+  "name": "tokengator_minter",
   "instructions": [
     {
-      "name": "createPreset",
+      "name": "createMinter",
       "accounts": [
         {
-          "name": "preset",
+          "name": "group",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "minter",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "minterTokenAccount",
           "isMut": true,
           "isSigner": false
         },
@@ -500,115 +484,6 @@ export const IDL: TokengatorPreset = {
           "name": "mint",
           "isMut": true,
           "isSigner": true
-        },
-        {
-          "name": "feePayer",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "authority",
-          "isMut": false,
-          "isSigner": true
-        },
-        {
-          "name": "tokenExtensionsProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "args",
-          "type": {
-            "defined": "CreatePresetArgs"
-          }
-        }
-      ]
-    },
-    {
-      "name": "addPresetAuthority",
-      "accounts": [
-        {
-          "name": "preset",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "authority",
-          "isMut": false,
-          "isSigner": true
-        },
-        {
-          "name": "feePayer",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "args",
-          "type": {
-            "defined": "AddPresetAuthorityArgs"
-          }
-        }
-      ]
-    },
-    {
-      "name": "removePresetAuthority",
-      "accounts": [
-        {
-          "name": "preset",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "feePayer",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "authority",
-          "isMut": false,
-          "isSigner": true
-        }
-      ],
-      "args": [
-        {
-          "name": "args",
-          "type": {
-            "defined": "RemovePresetAuthorityArgs"
-          }
-        }
-      ]
-    },
-    {
-      "name": "mintPreset",
-      "accounts": [
-        {
-          "name": "preset",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "mint",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "authorityTokenAccount",
-          "isMut": true,
-          "isSigner": false
         },
         {
           "name": "feePayer",
@@ -636,53 +511,43 @@ export const IDL: TokengatorPreset = {
           "isSigner": false
         }
       ],
-      "args": []
-    },
-    {
-      "name": "removePreset",
-      "accounts": [
+      "args": [
         {
-          "name": "preset",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "mint",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "feePayer",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "authority",
-          "isMut": false,
-          "isSigner": true
-        },
-        {
-          "name": "tokenProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "associatedTokenProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
+          "name": "args",
+          "type": {
+            "defined": "CreateMinterArgs"
+          }
         }
-      ],
-      "args": []
+      ]
     }
   ],
   "accounts": [
     {
-      "name": "preset",
+      "name": "group",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "updateAuthority",
+            "type": "publicKey"
+          },
+          {
+            "name": "mint",
+            "type": "publicKey"
+          },
+          {
+            "name": "size",
+            "type": "u32"
+          },
+          {
+            "name": "maxSize",
+            "type": "u32"
+          }
+        ]
+      }
+    },
+    {
+      "name": "minter",
       "type": {
         "kind": "struct",
         "fields": [
@@ -713,6 +578,12 @@ export const IDL: TokengatorPreset = {
             }
           },
           {
+            "name": "paymentConfig",
+            "type": {
+              "defined": "PaymentConfig"
+            }
+          },
+          {
             "name": "minterConfig",
             "type": {
               "defined": "MinterConfig"
@@ -736,7 +607,7 @@ export const IDL: TokengatorPreset = {
       }
     },
     {
-      "name": "CreatePresetArgs",
+      "name": "CreateMinterArgs",
       "type": {
         "kind": "struct",
         "fields": [
@@ -753,15 +624,21 @@ export const IDL: TokengatorPreset = {
             "type": "string"
           },
           {
-            "name": "decimals",
-            "type": "u8"
+            "name": "paymentConfig",
+            "type": {
+              "defined": "PaymentConfig"
+            }
+          },
+          {
+            "name": "applicationConfig",
+            "type": {
+              "defined": "MinterApplicationConfig"
+            }
           },
           {
             "name": "metadataConfig",
             "type": {
-              "option": {
-                "defined": "MinterMetadataConfig"
-              }
+              "defined": "MinterMetadataConfig"
             }
           },
           {
@@ -796,14 +673,38 @@ export const IDL: TokengatorPreset = {
       }
     },
     {
-      "name": "MinterMetadataConfig",
+      "name": "PaymentConfig",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "imageUrl",
-            "type": "string"
+            "name": "amount",
+            "type": "u16"
           },
+          {
+            "name": "price",
+            "type": "u64"
+          },
+          {
+            "name": "mint",
+            "type": "publicKey"
+          },
+          {
+            "name": "days",
+            "type": "u8"
+          },
+          {
+            "name": "expiresAt",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MinterMetadataConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
           {
             "name": "name",
             "type": "string"
@@ -861,6 +762,28 @@ export const IDL: TokengatorPreset = {
       }
     },
     {
+      "name": "MinterApplicationConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "identities",
+            "type": {
+              "vec": {
+                "defined": "IdentityProvider"
+              }
+            }
+          },
+          {
+            "name": "paymentConfig",
+            "type": {
+              "defined": "PaymentConfig"
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "MinterConfig",
       "type": {
         "kind": "struct",
@@ -870,15 +793,15 @@ export const IDL: TokengatorPreset = {
             "type": "publicKey"
           },
           {
-            "name": "decimals",
-            "type": "u8"
+            "name": "applicationConfig",
+            "type": {
+              "defined": "MinterApplicationConfig"
+            }
           },
           {
             "name": "metadataConfig",
             "type": {
-              "option": {
-                "defined": "MinterMetadataConfig"
-              }
+              "defined": "MinterMetadataConfig"
             }
           },
           {
@@ -896,6 +819,26 @@ export const IDL: TokengatorPreset = {
                 "defined": "MinterTransferFeeConfig"
               }
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "IdentityProvider",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Discord"
+          },
+          {
+            "name": "GitHub"
+          },
+          {
+            "name": "Google"
+          },
+          {
+            "name": "Twitter"
           }
         ]
       }
@@ -934,38 +877,43 @@ export const IDL: TokengatorPreset = {
     },
     {
       "code": 6006,
-      "name": "InvalidPresetName",
-      "msg": "Invalid preset name"
+      "name": "InvalidMinterTokenAccount",
+      "msg": "Invalid minter token account"
     },
     {
       "code": 6007,
-      "name": "InvalidPresetDescription",
-      "msg": "Invalid preset description"
+      "name": "InvalidMinterName",
+      "msg": "Invalid minter name"
     },
     {
       "code": 6008,
-      "name": "InvalidPresetImageURL",
-      "msg": "Invalid Image Url"
+      "name": "InvalidMinterDescription",
+      "msg": "Invalid minter description"
     },
     {
       "code": 6009,
+      "name": "InvalidMinterImageURL",
+      "msg": "Invalid Image Url"
+    },
+    {
+      "code": 6010,
       "name": "MaxSizeReached",
       "msg": "Array reached max size"
     },
     {
-      "code": 6010,
+      "code": 6011,
       "name": "InvalidMint",
       "msg": "Invalid mint account passed"
     },
     {
-      "code": 6011,
+      "code": 6012,
       "name": "InvalidTokenProgram",
       "msg": "Token extensions program required"
     },
     {
-      "code": 6012,
-      "name": "CannotRemoveNonZeroSupplyPreset",
-      "msg": "Cannot remove preset of non-zero supply"
+      "code": 6013,
+      "name": "CannotRemoveNonZeroSupplyMinter",
+      "msg": "Cannot remove minter of non-zero supply"
     }
   ]
 };

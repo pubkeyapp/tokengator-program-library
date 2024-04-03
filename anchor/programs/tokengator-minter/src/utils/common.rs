@@ -50,7 +50,7 @@ pub fn realloc_account<'a>(
     require_keys_eq!(
         *account.owner,
         id(),
-        TokenGatorPresetError::InvalidAccountOwner
+        TokenGatorMinterError::InvalidAccountOwner
     );
 
     let current_account_size = account.data.borrow().len();

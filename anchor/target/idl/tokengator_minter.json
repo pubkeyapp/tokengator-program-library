@@ -138,6 +138,90 @@
           }
         }
       ]
+    },
+    {
+      "name": "mintMinterWns",
+      "accounts": [
+        {
+          "name": "manager",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "WNS ACCOUNTS"
+          ]
+        },
+        {
+          "name": "group",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "member",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "minter",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            ""
+          ]
+        },
+        {
+          "name": "mint",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "authorityTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "feePayer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "authority",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "wnsProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": "MintMinterWNSArgs"
+          }
+        }
+      ]
     }
   ],
   "accounts": [
@@ -329,6 +413,26 @@
                 "defined": "MinterTransferFeeConfig"
               }
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "MintMinterWNSArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "symbol",
+            "type": "string"
+          },
+          {
+            "name": "uri",
+            "type": "string"
           }
         ]
       }
@@ -555,46 +659,56 @@
     },
     {
       "code": 6007,
+      "name": "InvalidAuthorityTokenAccount",
+      "msg": "Invalid authority token account"
+    },
+    {
+      "code": 6008,
       "name": "InvalidWNSGroup",
       "msg": "Invalid WNS group account"
     },
     {
-      "code": 6008,
+      "code": 6009,
+      "name": "InvalidWNSMember",
+      "msg": "Invalid WNS member account"
+    },
+    {
+      "code": 6010,
       "name": "InvalidWNSManager",
       "msg": "Invalid WNS manager account"
     },
     {
-      "code": 6009,
+      "code": 6011,
       "name": "InvalidMinterName",
       "msg": "Invalid minter name"
     },
     {
-      "code": 6010,
+      "code": 6012,
       "name": "InvalidMinterDescription",
       "msg": "Invalid minter description"
     },
     {
-      "code": 6011,
+      "code": 6013,
       "name": "InvalidMinterImageURL",
       "msg": "Invalid Image Url"
     },
     {
-      "code": 6012,
+      "code": 6014,
       "name": "MaxSizeReached",
       "msg": "Array reached max size"
     },
     {
-      "code": 6013,
+      "code": 6015,
       "name": "InvalidMint",
       "msg": "Invalid mint account passed"
     },
     {
-      "code": 6014,
+      "code": 6016,
       "name": "InvalidTokenProgram",
       "msg": "Token extensions program required"
     },
     {
-      "code": 6015,
+      "code": 6017,
       "name": "CannotRemoveNonZeroSupplyMinter",
       "msg": "Cannot remove minter of non-zero supply"
     }

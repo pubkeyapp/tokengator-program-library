@@ -1,16 +1,17 @@
 use anchor_lang::prelude::*;
-use anchor_spl::{associated_token::AssociatedToken, token_2022::Token2022};
+use anchor_spl::{
+    associated_token::{get_associated_token_address_with_program_id, AssociatedToken},
+    token_2022::Token2022,
+};
 use wen_new_standard::{
     cpi::{accounts::CreateGroupAccount, create_group_account},
     program::WenNewStandard,
     CreateGroupAccountArgs,
 };
 
-use crate::constants::*;
 use crate::errors::*;
 use crate::state::*;
-
-use wen_new_standard::{GROUP_ACCOUNT_SEED, MANAGER_SEED};
+use crate::{constants::*, utils::check_for_wns_accounts};
 
 #[derive(Accounts)]
 #[instruction(args: CreateMinterWNSArgs)]
@@ -36,8 +37,8 @@ pub struct CreateMinterWNS<'info> {
     )]
     pub minter: Account<'info, Minter>,
 
-    /// CHECK: Checks done inside the handler function
     #[account(mut)]
+    /// CHECK: Checks done inside the handler function
     pub minter_token_account: UncheckedAccount<'info>,
 
     #[account(mut)]
@@ -73,26 +74,23 @@ pub fn create_wns(ctx: Context<CreateMinterWNS>, args: CreateMinterWNSArgs) -> R
     let system_program = &ctx.accounts.system_program;
     let associated_token_program = &ctx.accounts.associated_token_program;
 
+    let minter_key = minter.key();
     let mint_key = mint.key();
     let group_key = group.key();
     let manager_key = manager.key();
 
-    let (expected_group_key, _) =
-        Pubkey::find_program_address(&[GROUP_ACCOUNT_SEED, mint_key.as_ref()], &wns_program.key());
-    let (expected_manager_key, _) =
-        Pubkey::find_program_address(&[MANAGER_SEED], &wns_program.key());
-
+    let expected_minter_token_account = get_associated_token_address_with_program_id(
+        &minter_key,
+        &mint_key,
+        &token_extensions_program.key(),
+    );
     require_eq!(
-        group_key,
-        expected_group_key,
-        TokenGatorMinterError::InvalidWNSGroup
+        expected_minter_token_account,
+        minter_token_account.key(),
+        TokenGatorMinterError::InvalidMinterTokenAccount
     );
 
-    require_eq!(
-        manager_key,
-        expected_manager_key,
-        TokenGatorMinterError::InvalidWNSManager
-    );
+    check_for_wns_accounts(&mint_key, &group_key, &manager_key, &None, &None)?;
 
     let CreateMinterWNSArgs {
         metadata_config,

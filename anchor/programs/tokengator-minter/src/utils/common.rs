@@ -1,7 +1,52 @@
 use anchor_lang::{prelude::*, system_program};
+use wen_new_standard::{
+    id as wns_program_id, GROUP_ACCOUNT_SEED, MANAGER_SEED, MEMBER_ACCOUNT_SEED,
+};
 
 use crate::errors::*;
 use crate::id;
+
+pub fn check_for_wns_accounts(
+    mint_key: &Pubkey,
+    group_key: &Pubkey,
+    manager_key: &Pubkey,
+    member_mint_key: &Option<Pubkey>,
+    member_key: &Option<Pubkey>,
+) -> Result<()> {
+    let wns_program = wns_program_id();
+    let (expected_group_key, _) =
+        Pubkey::find_program_address(&[GROUP_ACCOUNT_SEED, mint_key.as_ref()], &wns_program.key());
+    let (expected_manager_key, _) =
+        Pubkey::find_program_address(&[MANAGER_SEED], &wns_program.key());
+
+    require_eq!(
+        group_key,
+        &expected_group_key,
+        TokenGatorMinterError::InvalidWNSGroup
+    );
+
+    require_eq!(
+        manager_key,
+        &expected_manager_key,
+        TokenGatorMinterError::InvalidWNSManager
+    );
+
+    if let Some(member_key) = member_key {
+        let member_mint_key = member_mint_key.unwrap();
+        let (expected_member_key, _) = Pubkey::find_program_address(
+            &[MEMBER_ACCOUNT_SEED, member_mint_key.as_ref()],
+            &wns_program.key(),
+        );
+
+        require_eq!(
+            member_key,
+            &expected_member_key,
+            TokenGatorMinterError::InvalidWNSManager
+        );
+    }
+
+    Ok(())
+}
 
 pub fn is_valid_username(username: &str) -> bool {
     if username.len() < 3 || username.len() > 20 {

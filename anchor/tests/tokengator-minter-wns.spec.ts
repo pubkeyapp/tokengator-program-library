@@ -30,6 +30,11 @@ export function getWNSGroupPda(mint: PublicKey, programId: PublicKey) {
   return PublicKey.findProgramAddressSync([GROUP_ACCOUNT_SEED, mint.toBuffer()], programId)
 }
 
+export function getWNSMemberPda(mint: PublicKey, programId: PublicKey) {
+  const GROUP_ACCOUNT_SEED = anchor.utils.bytes.utf8.encode('member')
+  return PublicKey.findProgramAddressSync([GROUP_ACCOUNT_SEED, mint.toBuffer()], programId)
+}
+
 export function getWNSManagerPda(programId: PublicKey) {
   const MANAGER_SEED = anchor.utils.bytes.utf8.encode('manager')
   return PublicKey.findProgramAddressSync([MANAGER_SEED], programId)
@@ -44,8 +49,8 @@ describe('tokengator-minter', () => {
   const wnsProgramId = (anchor.workspace.WenNewStandard as Program<WenNewStandard>).programId
 
   const authority = Keypair.generate()
-  const authority2 = Keypair.generate()
-  const mintKeypair = Keypair.generate()
+  const groupMintKeypair = Keypair.generate()
+  const memberMintKeypair = Keypair.generate()
 
   beforeAll(async () => {
     console.log('Airdropping authority 1 SOL:', authority.publicKey.toString())
@@ -57,13 +62,11 @@ describe('tokengator-minter', () => {
 
   it('Create Business Visa TokengatorMinter', async () => {
     const [minter, minterBump] = getMinterPda({ name: 'Business Visa WNS', programId: program.programId })
-    const [group, groupPda] = getWNSGroupPda(mintKeypair.publicKey, wnsProgramId)
-    const [manager, managerPda] = getWNSManagerPda(wnsProgramId)
-
-    console.log(manager.toString())
+    const [group] = getWNSGroupPda(groupMintKeypair.publicKey, wnsProgramId)
+    const [manager] = getWNSManagerPda(wnsProgramId)
 
     const minterTokenAccount = getAssociatedTokenAddressSync(
-      mintKeypair.publicKey,
+      groupMintKeypair.publicKey,
       minter,
       true,
       TOKEN_2022_PROGRAM_ID,
@@ -99,7 +102,7 @@ describe('tokengator-minter', () => {
       },
       minterConfig: {
         metadataConfig: {
-          uri: `https://devnet.tokengator.app/api/metadata/json/${mintKeypair.publicKey.toString()}.json`,
+          uri: `https://devnet.tokengator.app/api/metadata/json/${groupMintKeypair.publicKey.toString()}.json`,
           name: 'Business Visa',
           symbol: 'BV',
           metadata: [
@@ -174,19 +177,19 @@ describe('tokengator-minter', () => {
         minterTokenAccount,
         authority: authority.publicKey,
         feePayer: remoteFeePayer.publicKey,
-        mint: mintKeypair.publicKey,
+        mint: groupMintKeypair.publicKey,
         rent: SYSVAR_RENT_PUBKEY,
         wnsProgram: wnsProgramId,
         associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
         tokenProgram: TOKEN_2022_PROGRAM_ID,
         systemProgram: SystemProgram.programId,
       })
-      .signers([authority, mintKeypair])
-      .rpc({ commitment: 'confirmed', skipPreflight: true })
+      .signers([authority, groupMintKeypair])
+      .rpc({ commitment: 'confirmed' })
 
     const minterData = await program.account.minter.fetch(minter)
-    const mintData = await getMint(provider.connection, mintKeypair.publicKey, 'confirmed', TOKEN_2022_PROGRAM_ID)
-    const metadataData = await getTokenMetadata(provider.connection, mintKeypair.publicKey)
+    const mintData = await getMint(provider.connection, groupMintKeypair.publicKey, 'confirmed', TOKEN_2022_PROGRAM_ID)
+    const metadataData = await getTokenMetadata(provider.connection, groupMintKeypair.publicKey)
 
     const postBalance = await provider.connection.getBalance(authority.publicKey)
     expect(postBalance).toStrictEqual(1 * LAMPORTS_PER_SOL)
@@ -213,7 +216,70 @@ describe('tokengator-minter', () => {
     expect(metadataData?.name).toStrictEqual(metadataConfig.name)
     expect(metadataData?.symbol).toStrictEqual(metadataConfig.symbol)
     expect(metadataData?.uri).toStrictEqual(metadataConfig.uri)
-    expect(metadataData?.mint).toStrictEqual(mintKeypair.publicKey)
+    expect(metadataData?.mint).toStrictEqual(groupMintKeypair.publicKey)
+    expect(metadataData?.updateAuthority).toStrictEqual(minter)
+    expect(metadataData?.additionalMetadata).toEqual([])
+  })
+
+  it('Mint Business Visa', async () => {
+    const [minter] = getMinterPda({ name: 'Business Visa WNS', programId: program.programId })
+    const [group] = getWNSGroupPda(groupMintKeypair.publicKey, wnsProgramId)
+    const [member] = getWNSMemberPda(memberMintKeypair.publicKey, wnsProgramId)
+    const [manager] = getWNSManagerPda(wnsProgramId)
+
+    const { name, symbol, uri } = {
+      uri: ``,
+      name: '',
+      symbol: '',
+    }
+
+    const authorityTokenAccount = getAssociatedTokenAddressSync(
+      memberMintKeypair.publicKey,
+      authority.publicKey,
+      false,
+      TOKEN_2022_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID,
+    )
+
+    await program.methods
+      .mintMinterWns({ name, symbol, uri })
+      .accounts({
+        minter,
+        group,
+        manager,
+        member,
+        authorityTokenAccount,
+        authority: authority.publicKey,
+        feePayer: remoteFeePayer.publicKey,
+        mint: memberMintKeypair.publicKey,
+        rent: SYSVAR_RENT_PUBKEY,
+        wnsProgram: wnsProgramId,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        tokenProgram: TOKEN_2022_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+      })
+      .signers([authority, memberMintKeypair])
+      .rpc({ commitment: 'confirmed', skipPreflight: true })
+
+    const mintData = await getMint(provider.connection, memberMintKeypair.publicKey, 'confirmed', TOKEN_2022_PROGRAM_ID)
+    const metadataData = await getTokenMetadata(provider.connection, memberMintKeypair.publicKey)
+
+    const postBalance = await provider.connection.getBalance(authority.publicKey)
+    expect(postBalance).toStrictEqual(1 * LAMPORTS_PER_SOL)
+
+    // Mint
+    expect(mintData.decimals).toStrictEqual(0)
+    // Change this after wns updates their set
+    expect(mintData.mintAuthority).toStrictEqual(manager)
+    expect(mintData.freezeAuthority).toStrictEqual(manager)
+    expect(mintData.supply).toStrictEqual(1n)
+
+    // Metadata
+    expect(metadataData).not.toBeNull()
+    expect(metadataData?.name).toStrictEqual(name)
+    expect(metadataData?.symbol).toStrictEqual(symbol)
+    expect(metadataData?.uri).toStrictEqual(uri)
+    expect(metadataData?.mint).toStrictEqual(memberMintKeypair.publicKey)
     expect(metadataData?.updateAuthority).toStrictEqual(minter)
     expect(metadataData?.additionalMetadata).toEqual([])
   })

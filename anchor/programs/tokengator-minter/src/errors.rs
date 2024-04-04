@@ -16,8 +16,12 @@ pub enum TokenGatorMinterError {
     CannotRemoveSoloAuthority,
     #[msg("Invalid minter token account")]
     InvalidMinterTokenAccount,
+    #[msg("Invalid authority token account")]
+    InvalidAuthorityTokenAccount,
     #[msg("Invalid WNS group account")]
     InvalidWNSGroup,
+    #[msg("Invalid WNS member account")]
+    InvalidWNSMember,
     #[msg("Invalid WNS manager account")]
     InvalidWNSManager,
     #[msg("Invalid minter name")]

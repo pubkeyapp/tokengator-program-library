@@ -41,9 +41,9 @@ pub mod tokengator_minter {
     //     minter::remove_authority(ctx, args)
     // }
 
-    // pub fn mint_preset(ctx: Context<MintPreset>) -> Result<()> {
-    //     minter::mint(ctx)
-    // }
+    pub fn mint_minter_wns(ctx: Context<MintMinterWNS>, args: MintMinterWNSArgs) -> Result<()> {
+        minter::mint_wns(ctx, args)
+    }
 
     // pub fn remove_preset(ctx: Context<RemovePreset>) -> Result<()> {
     //     minter::remove(ctx)

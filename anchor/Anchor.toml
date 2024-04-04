@@ -6,6 +6,7 @@ skip-lint = false
 
 [programs.localnet]
 tokengator_minter = "TPLx9nrMKbk3uQoHHL2pxepyYx4A4RH58EAPqsYE9ir"
+wen_new_standard = "wns1gDLt8fgLcGhWi5MqAqgXpwEP1JftKE9eZnXS1HM"
 
 [programs.devnet]
 tokengator_minter = "TPLx9nrMKbk3uQoHHL2pxepyYx4A4RH58EAPqsYE9ir"
@@ -26,6 +27,11 @@ shutdown_wait = 2000
 upgradeable = false
 
 [test.validator]
-bind_address = "127.0.0.1"
-ledger = ".anchor/test-ledger"
-rpc_port = 8899
+url = "https://api.mainnet-beta.solana.com"
+
+[[test.validator.clone]]
+# manager account
+address = "9SUrE3EPBoXVjNywEDHSJKJdxebs8H8sLgEWdueEvnKX"
+
+[[test.validator.clone]]
+address = "wns1gDLt8fgLcGhWi5MqAqgXpwEP1JftKE9eZnXS1HM"

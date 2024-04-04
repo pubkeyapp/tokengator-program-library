@@ -20,6 +20,13 @@ pub mod tokengator_minter {
         minter::create(ctx, args)
     }
 
+    pub fn create_minter_wns(
+        ctx: Context<CreateMinterWNS>,
+        args: CreateMinterWNSArgs,
+    ) -> Result<()> {
+        minter::create_wns(ctx, args)
+    }
+
     // pub fn add_preset_authority(
     //     ctx: Context<AddPresetAuthority>,
     //     args: AddPresetAuthorityArgs,

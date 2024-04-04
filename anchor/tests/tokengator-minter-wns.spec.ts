@@ -1,12 +1,11 @@
 import * as anchor from '@coral-xyz/anchor'
 import { Program } from '@coral-xyz/anchor'
-import { Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram } from '@solana/web3.js'
+import { Keypair, LAMPORTS_PER_SOL, PublicKey, SYSVAR_RENT_PUBKEY, SystemProgram } from '@solana/web3.js'
 import { TokengatorMinter } from '../target/types/tokengator_minter'
+import { WenNewStandard } from '../target/types/wen_new_standard'
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_2022_PROGRAM_ID,
-  createBurnCheckedInstruction,
-  getAccount,
   getAssociatedTokenAddressSync,
   getMint,
   getTokenMetadata,
@@ -14,7 +13,6 @@ import {
 
 const PREFIX = new TextEncoder().encode('tokengator_minter')
 const MINTER = new TextEncoder().encode('minter')
-const GROUP = new TextEncoder().encode('group')
 
 enum IdentityProvider {
   Discord = 'Discord',
@@ -23,22 +21,18 @@ enum IdentityProvider {
   Twitter = 'Twitter',
 }
 
-function getDefaultMetadata(metadata: { name: string; symbol: string; image?: string; mint: PublicKey }) {
-  const baseUrl = `https://metadata-tool.deno.dev/metadata`
-
-  const { image, mint, name, symbol } = metadata
-
-  return `${baseUrl}?name=${encodeURIComponent(name)}&symbol=${encodeURIComponent(symbol)}&mint=${mint}${
-    image ? `&image=${encodeURIComponent(image)}` : ''
-  }`
-}
-
 function getMinterPda({ programId, name }: { name: string; programId: PublicKey }) {
   return PublicKey.findProgramAddressSync([PREFIX, MINTER, new TextEncoder().encode(name)], programId)
 }
 
-function getGroupPda({ programId, mint }: { mint: PublicKey; programId: PublicKey }) {
-  return PublicKey.findProgramAddressSync([PREFIX, GROUP, mint.toBuffer()], programId)
+export function getWNSGroupPda(mint: PublicKey, programId: PublicKey) {
+  const GROUP_ACCOUNT_SEED = anchor.utils.bytes.utf8.encode('group')
+  return PublicKey.findProgramAddressSync([GROUP_ACCOUNT_SEED, mint.toBuffer()], programId)
+}
+
+export function getWNSManagerPda(programId: PublicKey) {
+  const MANAGER_SEED = anchor.utils.bytes.utf8.encode('manager')
+  return PublicKey.findProgramAddressSync([MANAGER_SEED], programId)
 }
 
 describe('tokengator-minter', () => {
@@ -47,6 +41,7 @@ describe('tokengator-minter', () => {
   anchor.setProvider(provider)
   const remoteFeePayer = provider.wallet as anchor.Wallet
   const program = anchor.workspace.TokengatorMinter as Program<TokengatorMinter>
+  const wnsProgramId = (anchor.workspace.WenNewStandard as Program<WenNewStandard>).programId
 
   const authority = Keypair.generate()
   const authority2 = Keypair.generate()
@@ -61,8 +56,11 @@ describe('tokengator-minter', () => {
   })
 
   it('Create Business Visa TokengatorMinter', async () => {
-    const [minter, minterBump] = getMinterPda({ name: 'Business Visa', programId: program.programId })
-    const [group, groupPda] = getGroupPda({ mint: mintKeypair.publicKey, programId: program.programId })
+    const [minter, minterBump] = getMinterPda({ name: 'Business Visa WNS', programId: program.programId })
+    const [group, groupPda] = getWNSGroupPda(mintKeypair.publicKey, wnsProgramId)
+    const [manager, managerPda] = getWNSManagerPda(wnsProgramId)
+
+    console.log(manager.toString())
 
     const minterTokenAccount = getAssociatedTokenAddressSync(
       mintKeypair.publicKey,
@@ -82,7 +80,7 @@ describe('tokengator-minter', () => {
         metadataConfig,
       },
     } = {
-      name: 'Business Visa',
+      name: 'Business Visa WNS',
       description:
         'The Business Visa preset is a preset that is used for business purposes. The end user pays to obtain the document and it expires after a certain period of time.',
       imageUrl: `https://devnet.tokengator.app/api/preset/business-visa.png`,
@@ -128,7 +126,7 @@ describe('tokengator-minter', () => {
     }
 
     await program.methods
-      .createMinter({
+      .createMinterWns({
         name,
         imageUrl,
         description,
@@ -172,18 +170,20 @@ describe('tokengator-minter', () => {
       .accounts({
         minter,
         group,
+        manager,
+        minterTokenAccount,
         authority: authority.publicKey,
         feePayer: remoteFeePayer.publicKey,
         mint: mintKeypair.publicKey,
-        minterTokenAccount,
-        tokenProgram: TOKEN_2022_PROGRAM_ID,
+        rent: SYSVAR_RENT_PUBKEY,
+        wnsProgram: wnsProgramId,
         associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        tokenProgram: TOKEN_2022_PROGRAM_ID,
         systemProgram: SystemProgram.programId,
       })
       .signers([authority, mintKeypair])
       .rpc({ commitment: 'confirmed', skipPreflight: true })
 
-    const groupData = await program.account.group.fetch(group)
     const minterData = await program.account.minter.fetch(minter)
     const mintData = await getMint(provider.connection, mintKeypair.publicKey, 'confirmed', TOKEN_2022_PROGRAM_ID)
     const metadataData = await getTokenMetadata(provider.connection, mintKeypair.publicKey)
@@ -201,16 +201,11 @@ describe('tokengator-minter', () => {
     expect(minterData.minterConfig.transferFeeConfig).toBeNull()
     expect(minterData.minterConfig.interestConfig).toBeNull()
 
-    // Group
-    expect(groupData.mint).toStrictEqual(mintKeypair.publicKey)
-    expect(groupData.updateAuthority).toStrictEqual(minter)
-    expect(groupData.maxSize).toStrictEqual(100)
-    expect(groupData.size).toStrictEqual(0)
-
     // Mint
     expect(mintData.decimals).toStrictEqual(0)
-    expect(mintData.mintAuthority).toStrictEqual(minter)
-    expect(mintData.freezeAuthority).toStrictEqual(minter)
+    // Change this after wns updates their set
+    expect(mintData.mintAuthority).toStrictEqual(manager)
+    expect(mintData.freezeAuthority).toStrictEqual(manager)
     expect(mintData.supply).toStrictEqual(1n)
 
     // Metadata
@@ -220,116 +215,6 @@ describe('tokengator-minter', () => {
     expect(metadataData?.uri).toStrictEqual(metadataConfig.uri)
     expect(metadataData?.mint).toStrictEqual(mintKeypair.publicKey)
     expect(metadataData?.updateAuthority).toStrictEqual(minter)
-    expect(metadataData?.additionalMetadata).toEqual([
-      ['preset', 'business-visa'],
-      ['community', 'tokengator'],
-    ])
+    expect(metadataData?.additionalMetadata).toEqual([])
   })
-
-  // it('Add Authority', async () => {
-  //   const [minter] = getMinterPda({ name: 'Business Visa', programId: program.programId })
-
-  //   await program.methods
-  //     .addPresetAuthority({ newAuthority: authority2.publicKey })
-  //     .accounts({ minter, authority: authority.publicKey, feePayer: remoteFeePayer.publicKey })
-  //     .signers([authority])
-  //     .rpc()
-
-  //   const { authorities } = await program.account.minter.fetch(minter)
-
-  //   const postBalance = await provider.connection.getBalance(authority.publicKey)
-
-  //   expect(postBalance).toStrictEqual(1 * LAMPORTS_PER_SOL)
-  //   expect(authorities.length).toStrictEqual(2)
-  // })
-
-  // it('Mint Business Visa Preset', async () => {
-  //   const [minter] = getMinterPda({ name: 'Business Visa', programId: program.programId })
-  //   const authorityTokenAccount = getAssociatedTokenAddressSync(
-  //     mintKeypair.publicKey,
-  //     authority2.publicKey,
-  //     false,
-  //     TOKEN_2022_PROGRAM_ID,
-  //   )
-
-  //   await program.methods
-  //     .mintPreset()
-  //     .accounts({
-  //       associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-  //       tokenProgram: TOKEN_2022_PROGRAM_ID,
-  //       feePayer: remoteFeePayer.publicKey,
-  //       authority: authority2.publicKey,
-  //       mint: mintKeypair.publicKey,
-  //       authorityTokenAccount,
-  //       minter,
-  //       systemProgram: SystemProgram.programId,
-  //     })
-  //     .signers([authority2])
-  //     .rpc({ commitment: 'confirmed', skipPreflight: true })
-
-  //   const tokenAccountData = await getAccount(
-  //     provider.connection,
-  //     authorityTokenAccount,
-  //     'confirmed',
-  //     TOKEN_2022_PROGRAM_ID,
-  //   )
-
-  //   expect(tokenAccountData.amount).toStrictEqual(1n)
-  //   expect(tokenAccountData.mint).toStrictEqual(mintKeypair.publicKey)
-  // })
-
-  // it('Remove Authority', async () => {
-  //   const [minter] = getMinterPda({ name: 'Business Visa', programId: program.programId })
-
-  //   await program.methods
-  //     .removePresetAuthority({ authorityToRemove: authority2.publicKey })
-  //     .accounts({ minter, authority: authority.publicKey, feePayer: remoteFeePayer.publicKey })
-  //     .signers([authority])
-  //     .rpc()
-
-  //   const { authorities } = await program.account.minter.fetch(minter)
-  //   expect(authorities).toEqual([authority.publicKey])
-  // })
-
-  // it('Remove Business Visa Preset', async () => {
-  //   const [minter] = getMinterPda({ name: 'Business Visa', programId: program.programId })
-  //   const authorityTokenAccount = getAssociatedTokenAddressSync(
-  //     mintKeypair.publicKey,
-  //     authority2.publicKey,
-  //     false,
-  //     TOKEN_2022_PROGRAM_ID,
-  //   )
-
-  //   const { decimals } = await getMint(provider.connection, mintKeypair.publicKey, 'confirmed', TOKEN_2022_PROGRAM_ID)
-
-  //   await program.methods
-  //     .removePreset()
-  //     .accounts({
-  //       associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-  //       authority: authority.publicKey,
-  //       feePayer: remoteFeePayer.publicKey,
-  //       mint: mintKeypair.publicKey,
-  //       minter,
-  //       systemProgram: SystemProgram.programId,
-  //       tokenProgram: TOKEN_2022_PROGRAM_ID,
-  //     })
-  //     .preInstructions([
-  //       createBurnCheckedInstruction(
-  //         authorityTokenAccount,
-  //         mintKeypair.publicKey,
-  //         authority2.publicKey,
-  //         1,
-  //         decimals,
-  //         [],
-  //         TOKEN_2022_PROGRAM_ID,
-  //       ),
-  //     ])
-  //     .signers([authority2, authority])
-  //     .rpc({ skipPreflight: true })
-
-  //   const minterData = await program.account.minter.fetchNullable(minter)
-  //   const mintData = await provider.connection.getAccountInfo(mintKeypair.publicKey)
-  //   expect(mintData).toBeNull()
-  //   expect(minterData).toBeNull()
-  // })
 })

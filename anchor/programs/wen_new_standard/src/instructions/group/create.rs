@@ -38,7 +38,7 @@ pub struct CreateGroupAccount<'info> {
         payer = payer,
         space = 8 + TokenGroup::INIT_SPACE
     )]
-    pub group: Box<Account<'info, TokenGroup>>,
+    pub group: Account<'info, TokenGroup>,
     #[account(
         init,
         signer,
@@ -68,7 +68,7 @@ pub struct CreateGroupAccount<'info> {
         seeds = [MANAGER_SEED],
         bump
     )]
-    pub manager: Box<Account<'info, Manager>>,
+    pub manager: Account<'info, Manager>,
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
     pub associated_token_program: Program<'info, AssociatedToken>,
@@ -77,21 +77,15 @@ pub struct CreateGroupAccount<'info> {
 
 impl<'info> CreateGroupAccount<'info> {
     fn initialize_metadata(&self, name: String, symbol: String, uri: String) -> ProgramResult {
-        token_metadata_initialize(
-            CpiContext::new(
-                self.token_program.to_account_info(),
-                TokenMetadataInitialize {
-                    token_program_id: self.token_program.to_account_info(),
-                    mint: self.mint.to_account_info(),
-                    metadata: self.mint.to_account_info(), // metadata account is the mint, since data is stored in mint
-                    mint_authority: self.authority.to_account_info(),
-                    update_authority: self.authority.to_account_info(),
-                },
-            ),
-            name,
-            symbol,
-            uri,
-        )?;
+        let cpi_accounts = TokenMetadataInitialize {
+            token_program_id: self.token_program.to_account_info(),
+            mint: self.mint.to_account_info(),
+            metadata: self.mint.to_account_info(), // metadata account is the mint, since data is stored in mint
+            mint_authority: self.authority.to_account_info(),
+            update_authority: self.authority.to_account_info(),
+        };
+        let cpi_ctx = CpiContext::new(self.token_program.to_account_info(), cpi_accounts);
+        token_metadata_initialize(cpi_ctx, name, symbol, uri)?;
         Ok(())
     }
 

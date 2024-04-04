@@ -59,6 +59,85 @@
           }
         }
       ]
+    },
+    {
+      "name": "createMinterWns",
+      "accounts": [
+        {
+          "name": "group",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "WNS ACCOUNTS"
+          ]
+        },
+        {
+          "name": "manager",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "minter",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            ""
+          ]
+        },
+        {
+          "name": "minterTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "mint",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "feePayer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "wnsProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": "CreateMinterWNSArgs"
+          }
+        }
+      ]
     }
   ],
   "accounts": [
@@ -142,6 +221,60 @@
           {
             "name": "newAuthority",
             "type": "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CreateMinterWNSArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "type": "string"
+          },
+          {
+            "name": "imageUrl",
+            "type": "string"
+          },
+          {
+            "name": "paymentConfig",
+            "type": {
+              "defined": "PaymentConfig"
+            }
+          },
+          {
+            "name": "applicationConfig",
+            "type": {
+              "defined": "MinterApplicationConfig"
+            }
+          },
+          {
+            "name": "metadataConfig",
+            "type": {
+              "defined": "MinterMetadataConfig"
+            }
+          },
+          {
+            "name": "interestConfig",
+            "type": {
+              "option": {
+                "defined": "MinterInterestConfig"
+              }
+            }
+          },
+          {
+            "name": "transferFeeConfig",
+            "type": {
+              "option": {
+                "defined": "MinterTransferFeeConfig"
+              }
+            }
           }
         ]
       }
@@ -422,36 +555,46 @@
     },
     {
       "code": 6007,
+      "name": "InvalidWNSGroup",
+      "msg": "Invalid WNS group account"
+    },
+    {
+      "code": 6008,
+      "name": "InvalidWNSManager",
+      "msg": "Invalid WNS manager account"
+    },
+    {
+      "code": 6009,
       "name": "InvalidMinterName",
       "msg": "Invalid minter name"
     },
     {
-      "code": 6008,
+      "code": 6010,
       "name": "InvalidMinterDescription",
       "msg": "Invalid minter description"
     },
     {
-      "code": 6009,
+      "code": 6011,
       "name": "InvalidMinterImageURL",
       "msg": "Invalid Image Url"
     },
     {
-      "code": 6010,
+      "code": 6012,
       "name": "MaxSizeReached",
       "msg": "Array reached max size"
     },
     {
-      "code": 6011,
+      "code": 6013,
       "name": "InvalidMint",
       "msg": "Invalid mint account passed"
     },
     {
-      "code": 6012,
+      "code": 6014,
       "name": "InvalidTokenProgram",
       "msg": "Token extensions program required"
     },
     {
-      "code": 6013,
+      "code": 6015,
       "name": "CannotRemoveNonZeroSupplyMinter",
       "msg": "Cannot remove minter of non-zero supply"
     }

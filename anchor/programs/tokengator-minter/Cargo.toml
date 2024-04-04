@@ -19,6 +19,7 @@ default = []
 anchor-lang = "0.29.0"
 anchor-spl = "0.29.0"
 spl-token-2022 = { version = "3.0.2", features = ["no-entrypoint"] }
+wen_new_standard = { path = "../wen_new_standard", features = ["cpi"] }
 spl-token-metadata-interface = "0.3.3"
 spl-token-group-interface = "0.2.3"
 spl-type-length-value = "0.4.3"

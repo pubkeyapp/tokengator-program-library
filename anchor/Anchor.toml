@@ -4,12 +4,12 @@
 seeds = false
 skip-lint = false
 
-[programs.localnet]
-tokengator_minter = "TPLx9nrMKbk3uQoHHL2pxepyYx4A4RH58EAPqsYE9ir"
-wen_new_standard = "wns1gDLt8fgLcGhWi5MqAqgXpwEP1JftKE9eZnXS1HM"
-
 [programs.devnet]
-tokengator_minter = "TPLx9nrMKbk3uQoHHL2pxepyYx4A4RH58EAPqsYE9ir"
+tokengator_minter = "gatorxhhdfsTpfkgB2QM4qwkwgSem2UgzPXLaD2ZGoY"
+
+[programs.localnet]
+tokengator_minter = "gatorxhhdfsTpfkgB2QM4qwkwgSem2UgzPXLaD2ZGoY"
+wen_new_standard = "wns1gDLt8fgLcGhWi5MqAqgXpwEP1JftKE9eZnXS1HM"
 
 [registry]
 url = "https://api.apr.dev"
@@ -27,10 +27,12 @@ shutdown_wait = 2000
 upgradeable = false
 
 [test.validator]
+bind_address = "0.0.0.0"
 url = "https://api.mainnet-beta.solana.com"
+ledger = ".anchor/test-ledger"
+rpc_port = 8899
 
 [[test.validator.clone]]
-# manager account
 address = "9SUrE3EPBoXVjNywEDHSJKJdxebs8H8sLgEWdueEvnKX"
 
 [[test.validator.clone]]

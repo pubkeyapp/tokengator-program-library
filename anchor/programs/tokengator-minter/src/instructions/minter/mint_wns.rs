@@ -33,6 +33,7 @@ pub struct MintMinterWNS<'info> {
       seeds = [
         PREFIX,
         MINTER,
+        &minter.minter_config.mint.as_ref(),
         &minter.name.as_bytes()
       ],
       bump = minter.bump,
@@ -106,7 +107,13 @@ pub fn mint_wns(ctx: Context<MintMinterWNS>, args: MintMinterWNSArgs) -> Result<
         &Some(member_key),
     )?;
 
-    let signer_seeds: &[&[&[u8]]] = &[&[PREFIX, MINTER, minter.name.as_bytes(), &[minter.bump]]];
+    let signer_seeds: &[&[&[u8]]] = &[&[
+        PREFIX,
+        MINTER,
+        mint_key.as_ref(),
+        minter.name.as_bytes(),
+        &[minter.bump],
+    ]];
 
     let MintMinterWNSArgs {
         name, symbol, uri, ..

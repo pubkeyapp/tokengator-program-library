@@ -11,6 +11,7 @@ pub struct RemovePresetAuthority<'info> {
       seeds = [
         PREFIX,
         MINTER,
+        &minter.minter_config.mint.as_ref(),
         &minter.name.as_bytes()
       ],
       bump = minter.bump,

@@ -3,8 +3,15 @@ use wen_new_standard::{
     id as wns_program_id, GROUP_ACCOUNT_SEED, MANAGER_SEED, MEMBER_ACCOUNT_SEED,
 };
 
+use crate::constants::*;
 use crate::errors::*;
 use crate::id;
+
+pub fn fetch_community_id(community: &str) -> Pubkey {
+    let (community_id, _) =
+        Pubkey::find_program_address(&[PREFIX, community.as_bytes()], &crate::id());
+    community_id
+}
 
 pub fn check_for_wns_accounts(
     mint_key: &Pubkey,

@@ -9,9 +9,10 @@ use wen_new_standard::{
     CreateGroupAccountArgs,
 };
 
+use crate::constants::*;
 use crate::errors::*;
 use crate::state::*;
-use crate::{constants::*, utils::check_for_wns_accounts};
+use crate::utils::*;
 
 #[derive(Accounts)]
 #[instruction(args: CreateMinterWNSArgs)]
@@ -31,6 +32,7 @@ pub struct CreateMinterWNS<'info> {
       seeds = [
         PREFIX,
         MINTER,
+        mint.key().as_ref(),
         &args.name.as_bytes()
       ],
       bump
@@ -79,6 +81,8 @@ pub fn create_wns(ctx: Context<CreateMinterWNS>, args: CreateMinterWNSArgs) -> R
     let group_key = group.key();
     let manager_key = manager.key();
 
+    let community_id = fetch_community_id(&args.community);
+
     let expected_minter_token_account = get_associated_token_address_with_program_id(
         &minter_key,
         &mint_key,
@@ -112,6 +116,7 @@ pub fn create_wns(ctx: Context<CreateMinterWNS>, args: CreateMinterWNSArgs) -> R
 
     minter.set_inner(Minter {
         bump: ctx.bumps.minter,
+        community_id,
         name: args.name.clone(),
         description: args.description,
         image_url: args.image_url,
@@ -124,7 +129,13 @@ pub fn create_wns(ctx: Context<CreateMinterWNS>, args: CreateMinterWNSArgs) -> R
     minter.validate()?;
 
     // 2. Creating WNS group
-    let signer_seeds: &[&[&[u8]]] = &[&[PREFIX, MINTER, minter.name.as_bytes(), &[minter.bump]]];
+    let signer_seeds: &[&[&[u8]]] = &[&[
+        PREFIX,
+        MINTER,
+        mint_key.as_ref(),
+        minter.name.as_bytes(),
+        &[minter.bump],
+    ]];
     create_group_account(
         CpiContext::new_with_signer(
             wns_program.to_account_info(),
@@ -156,6 +167,7 @@ pub fn create_wns(ctx: Context<CreateMinterWNS>, args: CreateMinterWNSArgs) -> R
 
 #[derive(AnchorSerialize, AnchorDeserialize)]
 pub struct CreateMinterWNSArgs {
+    pub community: String,
     pub name: String,
     pub description: String,
     pub image_url: String,

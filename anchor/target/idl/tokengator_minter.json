@@ -259,6 +259,10 @@
             "type": "u8"
           },
           {
+            "name": "communityId",
+            "type": "publicKey"
+          },
+          {
             "name": "name",
             "type": "string"
           },
@@ -315,6 +319,10 @@
         "kind": "struct",
         "fields": [
           {
+            "name": "community",
+            "type": "string"
+          },
+          {
             "name": "name",
             "type": "string"
           },
@@ -368,6 +376,10 @@
       "type": {
         "kind": "struct",
         "fields": [
+          {
+            "name": "community",
+            "type": "string"
+          },
           {
             "name": "name",
             "type": "string"

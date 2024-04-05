@@ -16,6 +16,7 @@ pub struct RemovePreset<'info> {
       seeds = [
         PREFIX,
         MINTER,
+        &minter.minter_config.mint.as_ref(),
         &minter.name.as_bytes()
       ],
       bump = minter.bump,
@@ -53,7 +54,15 @@ pub fn remove(ctx: Context<RemovePreset>) -> Result<()> {
     let mint = &ctx.accounts.mint;
     let token_extensions_program = &ctx.accounts.token_program;
 
-    let signer_seeds: &[&[&[u8]]] = &[&[PREFIX, MINTER, minter.name.as_bytes(), &[minter.bump]]];
+    let mint_key = mint.key();
+
+    let signer_seeds: &[&[&[u8]]] = &[&[
+        PREFIX,
+        MINTER,
+        mint_key.as_ref(),
+        minter.name.as_bytes(),
+        &[minter.bump],
+    ]];
 
     close_account(CpiContext::new_with_signer(
         token_extensions_program.to_account_info(),

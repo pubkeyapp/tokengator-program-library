@@ -23,9 +23,10 @@ use spl_token_metadata_interface::state::TokenMetadata;
 // use spl_token_group_interface::state::TokenGroup;
 // use spl_type_length_value::state::{TlvState, TlvStateBorrowed};
 
+use crate::constants::*;
 use crate::errors::*;
 use crate::state::*;
-use crate::{constants::*, utils::cpi::*};
+use crate::utils::*;
 
 #[derive(Accounts)]
 #[instruction(args: CreateMinterArgs)]
@@ -51,6 +52,7 @@ pub struct CreateMinter<'info> {
       seeds = [
         PREFIX,
         MINTER,
+        mint.key().as_ref(),
         &args.name.as_bytes()
       ],
       bump
@@ -93,6 +95,8 @@ pub fn create(ctx: Context<CreateMinter>, args: CreateMinterArgs) -> Result<()> 
     let mint_key = mint.key();
     let group_key = group.key();
 
+    let community_id = fetch_community_id(&args.community);
+
     let CreateMinterArgs {
         metadata_config,
         transfer_fee_config,
@@ -113,6 +117,7 @@ pub fn create(ctx: Context<CreateMinter>, args: CreateMinterArgs) -> Result<()> 
 
     minter.set_inner(Minter {
         bump: ctx.bumps.minter,
+        community_id,
         name: args.name.clone(),
         description: args.description,
         image_url: args.image_url,
@@ -252,7 +257,13 @@ pub fn create(ctx: Context<CreateMinter>, args: CreateMinterArgs) -> Result<()> 
     }
 
     // 4. Initializing mint
-    let signer_seeds: &[&[&[u8]]] = &[&[PREFIX, MINTER, minter.name.as_bytes(), &[minter.bump]]];
+    let signer_seeds: &[&[&[u8]]] = &[&[
+        PREFIX,
+        MINTER,
+        mint_key.as_ref(),
+        minter.name.as_bytes(),
+        &[minter.bump],
+    ]];
 
     initialize_mint2(
         CpiContext::new_with_signer(
@@ -388,6 +399,7 @@ pub fn create(ctx: Context<CreateMinter>, args: CreateMinterArgs) -> Result<()> 
 
 #[derive(AnchorSerialize, AnchorDeserialize)]
 pub struct CreateMinterArgs {
+    pub community: String,
     pub name: String,
     pub description: String,
     pub image_url: String,

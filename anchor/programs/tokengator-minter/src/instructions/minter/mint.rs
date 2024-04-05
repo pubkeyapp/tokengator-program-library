@@ -15,6 +15,7 @@ pub struct MintPreset<'info> {
       seeds = [
         PREFIX,
         MINTER,
+        &minter.minter_config.mint.as_ref(),
         &minter.name.as_bytes()
       ],
       bump = minter.bump,
@@ -60,11 +61,19 @@ pub fn mint(ctx: Context<MintPreset>) -> Result<()> {
     let destination_token_account = &ctx.accounts.authority_token_account;
     let token_extensions_program = &ctx.accounts.token_program;
 
+    let mint_key = mint.key();
+
     let amount_with_decimals = 1u64
         .checked_mul(10u64.checked_pow(mint.decimals.into()).unwrap())
         .unwrap();
 
-    let signer_seeds: &[&[&[u8]]] = &[&[PREFIX, MINTER, minter.name.as_bytes(), &[minter.bump]]];
+    let signer_seeds: &[&[&[u8]]] = &[&[
+        PREFIX,
+        MINTER,
+        mint_key.as_ref(),
+        minter.name.as_bytes(),
+        &[minter.bump],
+    ]];
 
     mint_to(
         CpiContext::new_with_signer(

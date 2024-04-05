@@ -33,8 +33,8 @@ function getDefaultMetadata(metadata: { name: string; symbol: string; image?: st
   }`
 }
 
-function getMinterPda({ programId, name }: { name: string; programId: PublicKey }) {
-  return PublicKey.findProgramAddressSync([PREFIX, MINTER, new TextEncoder().encode(name)], programId)
+function getMinterPda({ programId, mint, name }: { name: string; mint: PublicKey; programId: PublicKey }) {
+  return PublicKey.findProgramAddressSync([PREFIX, MINTER, mint.toBuffer(), new TextEncoder().encode(name)], programId)
 }
 
 function getGroupPda({ programId, mint }: { mint: PublicKey; programId: PublicKey }) {
@@ -61,7 +61,11 @@ describe('tokengator-minter', () => {
   })
 
   it('Create Business Visa TokengatorMinter', async () => {
-    const [minter, minterBump] = getMinterPda({ name: 'Business Visa', programId: program.programId })
+    const [minter, minterBump] = getMinterPda({
+      name: 'Business Visa',
+      mint: mintKeypair.publicKey,
+      programId: program.programId,
+    })
     const [group, groupBump] = getGroupPda({ mint: mintKeypair.publicKey, programId: program.programId })
 
     const minterTokenAccount = getAssociatedTokenAddressSync(
@@ -129,6 +133,7 @@ describe('tokengator-minter', () => {
 
     await program.methods
       .createMinter({
+        community: 'pubkey',
         name,
         imageUrl,
         description,

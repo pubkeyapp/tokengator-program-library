@@ -1,6 +1,7 @@
 pub const PREFIX: &[u8] = b"tokengator_minter";
 pub const MINTER: &[u8] = b"minter";
 pub const GROUP: &[u8] = b"group";
+pub const COMMUNITY: &[u8] = b"community";
 
 // Metadata
 pub const MAX_NAME_SIZE: usize = 50;

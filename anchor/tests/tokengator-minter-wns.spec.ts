@@ -21,8 +21,8 @@ enum IdentityProvider {
   Twitter = 'Twitter',
 }
 
-function getMinterPda({ programId, name }: { name: string; programId: PublicKey }) {
-  return PublicKey.findProgramAddressSync([PREFIX, MINTER, new TextEncoder().encode(name)], programId)
+function getMinterPda({ programId, mint, name }: { name: string; mint: PublicKey; programId: PublicKey }) {
+  return PublicKey.findProgramAddressSync([PREFIX, MINTER, mint.toBuffer(), new TextEncoder().encode(name)], programId)
 }
 
 export function getWNSGroupPda(mint: PublicKey, programId: PublicKey) {
@@ -61,7 +61,11 @@ describe('tokengator-minter', () => {
   })
 
   it('Create Business Visa TokengatorMinter', async () => {
-    const [minter, minterBump] = getMinterPda({ name: 'Business Visa WNS', programId: program.programId })
+    const [minter, minterBump] = getMinterPda({
+      name: 'Business Visa WNS',
+      mint: groupMintKeypair.publicKey,
+      programId: program.programId,
+    })
     const [group] = getWNSGroupPda(groupMintKeypair.publicKey, wnsProgramId)
     const [manager] = getWNSManagerPda(wnsProgramId)
 
@@ -130,6 +134,7 @@ describe('tokengator-minter', () => {
 
     await program.methods
       .createMinterWns({
+        community: 'pubkey',
         name,
         imageUrl,
         description,
@@ -222,7 +227,11 @@ describe('tokengator-minter', () => {
   })
 
   it('Mint Business Visa', async () => {
-    const [minter] = getMinterPda({ name: 'Business Visa WNS', programId: program.programId })
+    const [minter] = getMinterPda({
+      name: 'Business Visa WNS',
+      mint: groupMintKeypair.publicKey,
+      programId: program.programId,
+    })
     const [group] = getWNSGroupPda(groupMintKeypair.publicKey, wnsProgramId)
     const [member] = getWNSMemberPda(memberMintKeypair.publicKey, wnsProgramId)
     const [manager] = getWNSManagerPda(wnsProgramId)

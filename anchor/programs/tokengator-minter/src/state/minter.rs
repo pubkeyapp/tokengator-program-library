@@ -9,6 +9,8 @@ use anchor_lang::prelude::*;
 pub struct Minter {
     // Bump of the PDA
     pub bump: u8,
+    // Community ID
+    pub community_id: Pubkey,
     // Name of the Minter
     pub name: String,
     // Description about the Minter
@@ -39,6 +41,7 @@ impl Minter {
 
         8 + // Anchor discriminator
         1 + // bump
+        32 + // community_id
         MAX_NAME_SIZE + // name
         MAX_DESCRIPTION_SIZE + // description
         MAX_IMAGE_URL_SIZE + // image_url

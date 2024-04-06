@@ -4,9 +4,12 @@ use anchor_spl::{
     token_2022::Token2022,
 };
 use wen_new_standard::{
-    cpi::{accounts::CreateGroupAccount, create_group_account},
+    cpi::{
+        accounts::{AddMetadata, CreateGroupAccount},
+        add_metadata, create_group_account,
+    },
     program::WenNewStandard,
-    CreateGroupAccountArgs,
+    AddMetadataArgs, CreateGroupAccountArgs,
 };
 
 use crate::constants::*;
@@ -117,6 +120,7 @@ pub fn create(ctx: Context<CreateMinterWNS>, args: CreateMinterWNSArgs) -> Resul
     minter.set_inner(Minter {
         bump: ctx.bumps.minter,
         community_id,
+        group: group_key,
         name: args.name.clone(),
         description: args.description,
         image_url: args.image_url,
@@ -162,6 +166,32 @@ pub fn create(ctx: Context<CreateMinterWNS>, args: CreateMinterWNSArgs) -> Resul
             max_size: 100,
         },
     )?;
+
+    // 3. Updating additional metadata
+    if let Some(metadata) = metadata_config.metadata {
+        let metadata_args = metadata
+            .iter()
+            .map(|m| AddMetadataArgs {
+                field: m[0].clone(),
+                value: m[1].clone(),
+            })
+            .collect();
+
+        add_metadata(
+            CpiContext::new_with_signer(
+                wns_program.to_account_info(),
+                AddMetadata {
+                    payer: fee_payer.to_account_info(),
+                    authority: minter.to_account_info(),
+                    mint: mint.to_account_info(),
+                    system_program: system_program.to_account_info(),
+                    token_program: token_extensions_program.to_account_info(),
+                },
+                signer_seeds,
+            ),
+            metadata_args,
+        )?;
+    }
 
     Ok(())
 }

@@ -56,7 +56,7 @@ pub fn check_for_wns_accounts(
 }
 
 pub fn is_valid_username(username: &str) -> bool {
-    if username.len() < 3 || username.len() > 20 {
+    if username.len() < 3 || username.len() > MAX_NAME_SIZE {
         return false;
     }
 

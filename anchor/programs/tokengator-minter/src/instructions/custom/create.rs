@@ -118,6 +118,7 @@ pub fn create(ctx: Context<CreateMinter>, args: CreateMinterArgs) -> Result<()> 
     minter.set_inner(Minter {
         bump: ctx.bumps.minter,
         community_id,
+        group: group_key,
         name: args.name.clone(),
         description: args.description,
         image_url: args.image_url,
@@ -158,7 +159,7 @@ pub fn create(ctx: Context<CreateMinter>, args: CreateMinterArgs) -> Result<()> 
 
     let metadata = TokenMetadata {
         update_authority: OptionalNonZeroPubkey::try_from(Some(minter.key())).unwrap(),
-        mint: mint_key.clone(),
+        mint: mint_key,
         name: metadata_config.name.clone(),
         symbol: metadata_config.symbol.clone(),
         uri: metadata_config.uri.clone(),
@@ -210,8 +211,8 @@ pub fn create(ctx: Context<CreateMinter>, args: CreateMinterArgs) -> Result<()> 
                 mint: mint.to_account_info(),
             },
         ),
-        Some(minter_key.clone()),
-        Some(mint_key.clone()),
+        Some(minter_key),
+        Some(mint_key),
     )?;
 
     initialize_group_pointer(
@@ -221,8 +222,8 @@ pub fn create(ctx: Context<CreateMinter>, args: CreateMinterArgs) -> Result<()> 
                 mint: mint.to_account_info(),
             },
         ),
-        Some(minter_key.clone()),
-        Some(group_key.clone()),
+        Some(minter_key),
+        Some(group_key),
     )?;
 
     if interest_config.is_some() {
@@ -234,7 +235,7 @@ pub fn create(ctx: Context<CreateMinter>, args: CreateMinterArgs) -> Result<()> 
                     mint: mint.to_account_info(),
                 },
             ),
-            Some(minter_key.clone()),
+            Some(minter_key),
             interest_config.rate,
         )?;
     }
@@ -336,8 +337,8 @@ pub fn create(ctx: Context<CreateMinter>, args: CreateMinterArgs) -> Result<()> 
     //     100,
     // )?;
     group.set_inner(Group {
-        update_authority: minter_key.clone(),
-        mint: mint_key.clone(),
+        update_authority: minter_key,
+        mint: mint_key,
         max_size: 100,
         size: 0,
     });

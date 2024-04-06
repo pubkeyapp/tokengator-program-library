@@ -46,7 +46,32 @@ pub mod tokengator_minter {
         wns::mint(ctx, args)
     }
 
+    pub fn update_member_metdata(
+        ctx: Context<UpdateMemberMetadata>,
+        args: UpdateMemberMetadataArgs,
+    ) -> Result<()> {
+        custom::update(ctx, args)
+    }
+
+    pub fn update_member_metadata_wns(
+        ctx: Context<UpdateMemberMetadataWNS>,
+        args: UpdateMemberMetadataWNSArgs,
+    ) -> Result<()> {
+        wns::update(ctx, args)
+    }
+
     pub fn remove_minter(ctx: Context<RemoveMinter>) -> Result<()> {
         custom::remove(ctx)
+    }
+
+    pub fn create_activity(ctx: Context<CreateActivity>, args: CreateActivityArgs) -> Result<()> {
+        activity::create(ctx, args)
+    }
+
+    pub fn append_activity_entry(
+        ctx: Context<AppendActivityEntry>,
+        args: AppendActivityEntryArgs,
+    ) -> Result<()> {
+        activity::append(ctx, args)
     }
 }

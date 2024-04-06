@@ -227,3 +227,32 @@ pub fn update_metadata_field<'info>(
     )
     .map_err(Into::into)
 }
+
+#[derive(Accounts)]
+pub struct RemoveMetadataField<'info> {
+    /// CHECK: CPI Account
+    pub metadata: AccountInfo<'info>,
+    /// CHECK: CPI Account
+    pub update_authority: AccountInfo<'info>,
+}
+
+pub fn remove_metadata_field<'info>(
+    ctx: CpiContext<'_, '_, '_, 'info, RemoveMetadataField<'info>>,
+    key: String,
+    idempotent: bool,
+) -> Result<()> {
+    let ix = spl_token_metadata_interface::instruction::remove_key(
+        ctx.program.key,
+        ctx.accounts.metadata.key,
+        ctx.accounts.update_authority.key,
+        key,
+        idempotent,
+    );
+
+    solana_program::program::invoke_signed(
+        &ix,
+        &[ctx.accounts.metadata, ctx.accounts.update_authority],
+        ctx.signer_seeds,
+    )
+    .map_err(Into::into)
+}

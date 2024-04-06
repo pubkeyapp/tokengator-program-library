@@ -6,11 +6,11 @@ use anchor_spl::{
 };
 use wen_new_standard::{
     cpi::{
-        accounts::{AddGroup, CreateMintAccount},
-        add_mint_to_group, create_mint_account,
+        accounts::{AddGroup, AddMetadata, CreateMintAccount},
+        add_metadata, add_mint_to_group, create_mint_account,
     },
     program::WenNewStandard,
-    CreateMintAccountArgs, Manager, TokenGroup,
+    AddMetadataArgs, CreateMintAccountArgs, Manager, TokenGroup,
 };
 
 use crate::errors::*;
@@ -119,6 +119,7 @@ pub fn mint(ctx: Context<MintMinterWNS>, args: MintMinterWNSArgs) -> Result<()> 
         name, symbol, uri, ..
     } = args;
 
+    // 1. Creating member mint
     create_mint_account(
         CpiContext::new(
             wns_program.to_account_info(),
@@ -143,6 +144,33 @@ pub fn mint(ctx: Context<MintMinterWNS>, args: MintMinterWNSArgs) -> Result<()> 
         },
     )?;
 
+    // 2. Updating additional metadata
+    if let Some(metadata) = args.metadata {
+        let metadata_args = metadata
+            .iter()
+            .map(|m| AddMetadataArgs {
+                field: m[0].clone(),
+                value: m[1].clone(),
+            })
+            .collect();
+
+        add_metadata(
+            CpiContext::new_with_signer(
+                token_extensions_program.to_account_info(),
+                AddMetadata {
+                    payer: fee_payer.to_account_info(),
+                    authority: minter.to_account_info(),
+                    mint: mint.to_account_info(),
+                    system_program: system_program.to_account_info(),
+                    token_program: token_extensions_program.to_account_info(),
+                },
+                signer_seeds,
+            ),
+            metadata_args,
+        )?;
+    }
+
+    // 3. Adding member to group
     add_mint_to_group(CpiContext::new_with_signer(
         wns_program.to_account_info(),
         AddGroup {
@@ -166,4 +194,5 @@ pub struct MintMinterWNSArgs {
     pub name: String,
     pub symbol: String,
     pub uri: String,
+    pub metadata: Option<Vec<[String; 2]>>,
 }

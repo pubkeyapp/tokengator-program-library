@@ -1158,5 +1158,8 @@
       "name": "CannotRemoveNonZeroSupplyMinter",
       "msg": "Cannot remove minter of non-zero supply"
     }
-  ]
+  ],
+  "metadata": {
+    "address": "gatorxhhdfsTpfkgB2QM4qwkwgSem2UgzPXLaD2ZGoY"
+  }
 }

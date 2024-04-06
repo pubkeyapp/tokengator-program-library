@@ -2,11 +2,13 @@
 
 use anchor_lang::prelude::*;
 
+pub mod custom_cpi;
 pub mod errors;
 pub mod instructions;
 pub mod state;
 pub mod utils;
 
+pub use custom_cpi::*;
 pub use errors::*;
 pub use instructions::*;
 pub use state::*;

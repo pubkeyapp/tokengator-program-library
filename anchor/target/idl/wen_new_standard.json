@@ -733,5 +733,8 @@
       "name": "RoyaltyBasisPointsInvalid",
       "msg": "Royalty basis points must be less than or equal to 10000."
     }
-  ]
+  ],
+  "metadata": {
+    "address": "wns1gDLt8fgLcGhWi5MqAqgXpwEP1JftKE9eZnXS1HM"
+  }
 }

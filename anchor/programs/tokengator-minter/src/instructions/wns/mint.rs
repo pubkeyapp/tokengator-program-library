@@ -13,9 +13,10 @@ use wen_new_standard::{
     AddMetadataArgs, CreateMintAccountArgs, Manager, TokenGroup,
 };
 
+use crate::constants::*;
 use crate::errors::*;
 use crate::state::*;
-use crate::{constants::*, utils::check_for_wns_accounts};
+use crate::utils::*;
 
 #[derive(Accounts)]
 pub struct MintMinterWNS<'info> {
@@ -121,11 +122,11 @@ pub fn mint(ctx: Context<MintMinterWNS>, args: MintMinterWNSArgs) -> Result<()> 
 
     // 1. Creating member mint
     create_mint_account(
-        CpiContext::new(
+        CpiContext::new_with_signer(
             wns_program.to_account_info(),
             CreateMintAccount {
                 associated_token_program: associated_token_program.to_account_info(),
-                authority: authority.to_account_info(),
+                authority: minter.to_account_info(),
                 manager: manager.to_account_info(),
                 mint: mint.to_account_info(),
                 mint_token_account: authority_token_account.to_account_info(),
@@ -135,6 +136,7 @@ pub fn mint(ctx: Context<MintMinterWNS>, args: MintMinterWNSArgs) -> Result<()> 
                 system_program: system_program.to_account_info(),
                 token_program: token_extensions_program.to_account_info(),
             },
+            signer_seeds,
         ),
         CreateMintAccountArgs {
             name,
@@ -156,7 +158,7 @@ pub fn mint(ctx: Context<MintMinterWNS>, args: MintMinterWNSArgs) -> Result<()> 
 
         add_metadata(
             CpiContext::new_with_signer(
-                token_extensions_program.to_account_info(),
+                wns_program.to_account_info(),
                 AddMetadata {
                     payer: fee_payer.to_account_info(),
                     authority: minter.to_account_info(),

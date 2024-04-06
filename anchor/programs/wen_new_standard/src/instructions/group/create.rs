@@ -1,12 +1,26 @@
-use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
+use anchor_lang::{
+    prelude::*,
+    solana_program::entrypoint::ProgramResult,
+    system_program::{create_account, CreateAccount},
+};
 use anchor_spl::{
-    associated_token::AssociatedToken,
+    associated_token::{
+        create as create_associated_token, AssociatedToken, Create as CreateAssociatedToken,
+    },
+    token_2022::{
+        initialize_mint2, initialize_mint_close_authority, spl_token_2022::state::Mint as TMint,
+        InitializeMint2, InitializeMintCloseAuthority,
+    },
     token_interface::{
-        mint_to, set_authority, spl_token_2022::instruction::AuthorityType,
-        token_metadata_initialize, Mint, MintTo, SetAuthority, Token2022, TokenAccount,
-        TokenMetadataInitialize,
+        mint_to, set_authority,
+        spl_pod::optional_keys::OptionalNonZeroPubkey,
+        spl_token_2022::{extension::*, instruction::AuthorityType},
+        spl_token_metadata_interface::state::TokenMetadata,
+        token_metadata_initialize, MintTo, SetAuthority, Token2022, TokenMetadataInitialize,
     },
 };
+
+use crate::custom_cpi::*;
 
 use crate::{
     update_account_lamports_to_minimum_balance, Manager, TokenGroup, GROUP_ACCOUNT_SEED,
@@ -39,31 +53,11 @@ pub struct CreateGroupAccount<'info> {
         space = 8 + TokenGroup::INIT_SPACE
     )]
     pub group: Account<'info, TokenGroup>,
-    #[account(
-        init,
-        signer,
-        payer = payer,
-        mint::token_program = token_program,
-        mint::decimals = 0,
-        mint::authority = authority,
-        mint::freeze_authority = manager,
-        extensions::metadata_pointer::authority = authority,
-        extensions::metadata_pointer::metadata_address = mint,
-        // group pointer authority is left as the manager so that it can be updated once token group support inside mint is added
-        extensions::group_pointer::authority = manager,
-        extensions::group_pointer::group_address = group,
-        // temporary mint close authority until a better program accounts can be used
-        extensions::close_authority::authority = manager,
-    )]
-    pub mint: Box<InterfaceAccount<'info, Mint>>,
-    #[account(
-        init,
-        payer = payer,
-        associated_token::token_program = token_program,
-        associated_token::mint = mint,
-        associated_token::authority = receiver,
-    )]
-    pub mint_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
+    #[account(mut)]
+    pub mint: Signer<'info>,
+    /// CHECK: Localnet changes
+    #[account(mut)]
+    pub mint_token_account: UncheckedAccount<'info>,
     #[account(
         seeds = [MANAGER_SEED],
         bump
@@ -114,6 +108,105 @@ impl<'info> CreateGroupAccount<'info> {
 }
 
 pub fn handler(ctx: Context<CreateGroupAccount>, args: CreateGroupAccountArgs) -> Result<()> {
+    let payer = &ctx.accounts.payer;
+    let authority = &ctx.accounts.authority;
+    let group = &ctx.accounts.group;
+    let mint = &ctx.accounts.mint;
+    let manager = &ctx.accounts.manager;
+    let mint_token_account = &ctx.accounts.mint_token_account;
+
+    let system_program = &ctx.accounts.system_program;
+    let token_program = &ctx.accounts.token_program;
+    let associated_token_program = &ctx.accounts.associated_token_program;
+
+    let mint_extension_types = vec![
+        ExtensionType::MintCloseAuthority,
+        ExtensionType::MetadataPointer,
+        ExtensionType::GroupPointer,
+    ];
+
+    let metadata = TokenMetadata {
+        update_authority: OptionalNonZeroPubkey::try_from(Some(authority.key())).unwrap(),
+        mint: mint.key(),
+        name: args.name.clone(),
+        symbol: args.symbol.clone(),
+        uri: args.uri.clone(),
+        additional_metadata: vec![],
+    };
+
+    let mint_size = ExtensionType::try_calculate_account_len::<TMint>(&mint_extension_types)?;
+    let metadata_size = metadata.tlv_size_of()?;
+    let rent_lamports = Rent::get()?.minimum_balance(mint_size + metadata_size);
+
+    create_account(
+        CpiContext::new(
+            system_program.to_account_info(),
+            CreateAccount {
+                from: payer.to_account_info(),
+                to: mint.to_account_info(),
+            },
+        ),
+        rent_lamports,
+        u64::try_from(mint_size).unwrap(),
+        token_program.key,
+    )?;
+
+    initialize_mint_close_authority(
+        CpiContext::new(
+            token_program.to_account_info(),
+            InitializeMintCloseAuthority {
+                mint: mint.to_account_info(),
+            },
+        ),
+        Some(&manager.key()),
+    )?;
+
+    initialize_metadata_pointer(
+        CpiContext::new(
+            token_program.to_account_info(),
+            InitializeMetadataPointer {
+                mint: mint.to_account_info(),
+            },
+        ),
+        Some(authority.key()),
+        Some(mint.key()),
+    )?;
+
+    initialize_group_pointer(
+        CpiContext::new(
+            token_program.to_account_info(),
+            InitializeGroupPointer {
+                mint: mint.to_account_info(),
+            },
+        ),
+        Some(manager.key()),
+        Some(group.key()),
+    )?;
+
+    initialize_mint2(
+        CpiContext::new(
+            token_program.to_account_info(),
+            InitializeMint2 {
+                mint: mint.to_account_info(),
+            },
+        ),
+        0,
+        &authority.key(),
+        Some(&manager.key()),
+    )?;
+
+    create_associated_token(CpiContext::new(
+        associated_token_program.to_account_info(),
+        CreateAssociatedToken {
+            payer: payer.to_account_info(),
+            associated_token: mint_token_account.to_account_info(),
+            authority: authority.to_account_info(),
+            mint: mint.to_account_info(),
+            system_program: system_program.to_account_info(),
+            token_program: token_program.to_account_info(),
+        },
+    ))?;
+
     // initialize token metadata
     ctx.accounts
         .initialize_metadata(args.name, args.symbol, args.uri)?;

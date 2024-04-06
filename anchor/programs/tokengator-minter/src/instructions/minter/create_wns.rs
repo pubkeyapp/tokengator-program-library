@@ -136,6 +136,7 @@ pub fn create_wns(ctx: Context<CreateMinterWNS>, args: CreateMinterWNSArgs) -> R
         minter.name.as_bytes(),
         &[minter.bump],
     ]];
+
     create_group_account(
         CpiContext::new_with_signer(
             wns_program.to_account_info(),

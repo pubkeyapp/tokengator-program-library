@@ -59,7 +59,7 @@ pub fn remove(ctx: Context<RemovePreset>) -> Result<()> {
     let signer_seeds: &[&[&[u8]]] = &[&[
         PREFIX,
         MINTER,
-        mint_key.as_ref(),
+        minter.minter_config.mint.as_ref(),
         minter.name.as_bytes(),
         &[minter.bump],
     ]];

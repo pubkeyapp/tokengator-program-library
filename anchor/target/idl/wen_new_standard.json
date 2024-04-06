@@ -4,7 +4,9 @@
   "instructions": [
     {
       "name": "initManagerAccount",
-      "docs": ["Init manager account"],
+      "docs": [
+        "Init manager account"
+      ],
       "accounts": [
         {
           "name": "payer",
@@ -26,7 +28,10 @@
     },
     {
       "name": "createGroupAccount",
-      "docs": ["Token group instructions", "create group"],
+      "docs": [
+        "Token group instructions",
+        "create group"
+      ],
       "accounts": [
         {
           "name": "payer",
@@ -95,7 +100,9 @@
     },
     {
       "name": "updateGroupAccount",
-      "docs": ["update group"],
+      "docs": [
+        "update group"
+      ],
       "accounts": [
         {
           "name": "payer",
@@ -139,7 +146,9 @@
     },
     {
       "name": "createMintAccount",
-      "docs": ["create mint"],
+      "docs": [
+        "create mint"
+      ],
       "accounts": [
         {
           "name": "payer",
@@ -203,7 +212,9 @@
     },
     {
       "name": "addMintToGroup",
-      "docs": ["add mint to group"],
+      "docs": [
+        "add mint to group"
+      ],
       "accounts": [
         {
           "name": "payer",
@@ -250,7 +261,9 @@
     },
     {
       "name": "addMetadata",
-      "docs": ["add additional metadata to mint"],
+      "docs": [
+        "add additional metadata to mint"
+      ],
       "accounts": [
         {
           "name": "payer",
@@ -291,7 +304,9 @@
     },
     {
       "name": "removeMetadata",
-      "docs": ["remove additional metadata to mint"],
+      "docs": [
+        "remove additional metadata to mint"
+      ],
       "accounts": [
         {
           "name": "payer",
@@ -332,7 +347,9 @@
     },
     {
       "name": "freezeMintAccount",
-      "docs": ["freeze mint"],
+      "docs": [
+        "freeze mint"
+      ],
       "accounts": [
         {
           "name": "payer",
@@ -374,7 +391,9 @@
     },
     {
       "name": "thawMintAccount",
-      "docs": ["thaw mint"],
+      "docs": [
+        "thaw mint"
+      ],
       "accounts": [
         {
           "name": "payer",
@@ -416,7 +435,9 @@
     },
     {
       "name": "burnMintAccount",
-      "docs": ["burn mint"],
+      "docs": [
+        "burn mint"
+      ],
       "accounts": [
         {
           "name": "payer",
@@ -467,13 +488,17 @@
     },
     {
       "name": "TokenGroup",
-      "docs": ["Data struct for a `TokenGroup`"],
+      "docs": [
+        "Data struct for a `TokenGroup`"
+      ],
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "updateAuthority",
-            "docs": ["The authority that can sign to update the group"],
+            "docs": [
+              "The authority that can sign to update the group"
+            ],
             "type": "publicKey"
           },
           {
@@ -486,12 +511,16 @@
           },
           {
             "name": "size",
-            "docs": ["The current number of group members"],
+            "docs": [
+              "The current number of group members"
+            ],
             "type": "u32"
           },
           {
             "name": "maxSize",
-            "docs": ["The maximum number of group members"],
+            "docs": [
+              "The maximum number of group members"
+            ],
             "type": "u32"
           }
         ]
@@ -499,7 +528,9 @@
     },
     {
       "name": "Manager",
-      "docs": ["Data struct for a `Manager`"],
+      "docs": [
+        "Data struct for a `Manager`"
+      ],
       "type": {
         "kind": "struct",
         "fields": []
@@ -507,7 +538,9 @@
     },
     {
       "name": "TokenGroupMember",
-      "docs": ["Data struct for a `TokenGroupMember`"],
+      "docs": [
+        "Data struct for a `TokenGroupMember`"
+      ],
       "type": {
         "kind": "struct",
         "fields": [
@@ -521,12 +554,16 @@
           },
           {
             "name": "group",
-            "docs": ["The pubkey of the `TokenGroup`"],
+            "docs": [
+              "The pubkey of the `TokenGroup`"
+            ],
             "type": "publicKey"
           },
           {
             "name": "memberNumber",
-            "docs": ["The member number"],
+            "docs": [
+              "The member number"
+            ],
             "type": "u32"
           }
         ]

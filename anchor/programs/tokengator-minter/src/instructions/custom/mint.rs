@@ -61,8 +61,6 @@ pub fn mint(ctx: Context<MintPreset>) -> Result<()> {
     let destination_token_account = &ctx.accounts.authority_token_account;
     let token_extensions_program = &ctx.accounts.token_program;
 
-    let mint_key = mint.key();
-
     let amount_with_decimals = 1u64
         .checked_mul(10u64.checked_pow(mint.decimals.into()).unwrap())
         .unwrap();

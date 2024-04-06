@@ -1,4 +1,5 @@
 #![allow(clippy::result_large_err)]
+#![allow(ambiguous_glob_reexports)]
 
 use anchor_lang::prelude::*;
 
@@ -17,35 +18,35 @@ pub mod tokengator_minter {
     use super::*;
 
     pub fn create_minter(ctx: Context<CreateMinter>, args: CreateMinterArgs) -> Result<()> {
-        minter::create(ctx, args)
+        custom::create(ctx, args)
     }
 
     pub fn create_minter_wns(
         ctx: Context<CreateMinterWNS>,
         args: CreateMinterWNSArgs,
     ) -> Result<()> {
-        minter::create_wns(ctx, args)
+        wns::create(ctx, args)
     }
 
-    // pub fn add_preset_authority(
-    //     ctx: Context<AddPresetAuthority>,
-    //     args: AddPresetAuthorityArgs,
-    // ) -> Result<()> {
-    //     minter::add_authority(ctx, args)
-    // }
+    pub fn add_minter_authority(
+        ctx: Context<AddMinterAuthority>,
+        args: AddMinterAuthorityArgs,
+    ) -> Result<()> {
+        authority::add(ctx, args)
+    }
 
-    // pub fn remove_preset_authority(
-    //     ctx: Context<RemovePresetAuthority>,
-    //     args: RemovePresetAuthorityArgs,
-    // ) -> Result<()> {
-    //     minter::remove_authority(ctx, args)
-    // }
+    pub fn remove_minter_authority(
+        ctx: Context<RemoveMinterAuthority>,
+        args: RemoveMinterAuthorityArgs,
+    ) -> Result<()> {
+        authority::remove(ctx, args)
+    }
 
     pub fn mint_minter_wns(ctx: Context<MintMinterWNS>, args: MintMinterWNSArgs) -> Result<()> {
-        minter::mint_wns(ctx, args)
+        wns::mint(ctx, args)
     }
 
-    // pub fn remove_preset(ctx: Context<RemovePreset>) -> Result<()> {
-    //     minter::remove(ctx)
-    // }
+    pub fn remove_minter(ctx: Context<RemoveMinter>) -> Result<()> {
+        custom::remove(ctx)
+    }
 }

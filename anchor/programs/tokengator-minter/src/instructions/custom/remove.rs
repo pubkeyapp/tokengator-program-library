@@ -10,7 +10,7 @@ use crate::errors::*;
 use crate::state::*;
 
 #[derive(Accounts)]
-pub struct RemovePreset<'info> {
+pub struct RemoveMinter<'info> {
     #[account(
       mut,
       seeds = [
@@ -47,14 +47,12 @@ pub struct RemovePreset<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn remove(ctx: Context<RemovePreset>) -> Result<()> {
+pub fn remove(ctx: Context<RemoveMinter>) -> Result<()> {
     let fee_payer = &ctx.accounts.fee_payer;
     let minter = &ctx.accounts.minter;
 
     let mint = &ctx.accounts.mint;
     let token_extensions_program = &ctx.accounts.token_program;
-
-    let mint_key = mint.key();
 
     let signer_seeds: &[&[&[u8]]] = &[&[
         PREFIX,

@@ -6,7 +6,7 @@ use crate::state::*;
 use crate::utils::*;
 
 #[derive(Accounts)]
-pub struct AddPresetAuthority<'info> {
+pub struct AddMinterAuthority<'info> {
     #[account(
       mut,
       seeds = [
@@ -31,7 +31,7 @@ pub struct AddPresetAuthority<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn add_authority(ctx: Context<AddPresetAuthority>, args: AddPresetAuthorityArgs) -> Result<()> {
+pub fn add(ctx: Context<AddMinterAuthority>, args: AddMinterAuthorityArgs) -> Result<()> {
     let minter = &mut ctx.accounts.minter;
     let fee_payer = &ctx.accounts.fee_payer;
     let system_program = &ctx.accounts.system_program;
@@ -64,6 +64,6 @@ pub fn add_authority(ctx: Context<AddPresetAuthority>, args: AddPresetAuthorityA
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize)]
-pub struct AddPresetAuthorityArgs {
+pub struct AddMinterAuthorityArgs {
     pub new_authority: Pubkey,
 }

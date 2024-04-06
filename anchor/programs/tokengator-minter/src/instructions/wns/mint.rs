@@ -64,7 +64,7 @@ pub struct MintMinterWNS<'info> {
     pub rent: Sysvar<'info, Rent>,
 }
 
-pub fn mint_wns(ctx: Context<MintMinterWNS>, args: MintMinterWNSArgs) -> Result<()> {
+pub fn mint(ctx: Context<MintMinterWNS>, args: MintMinterWNSArgs) -> Result<()> {
     let minter = &mut ctx.accounts.minter;
     let group = &mut ctx.accounts.group;
     let member = &mut ctx.accounts.member;

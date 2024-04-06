@@ -140,6 +140,67 @@ export type TokengatorMinter = {
       ]
     },
     {
+      "name": "addMinterAuthority",
+      "accounts": [
+        {
+          "name": "minter",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "feePayer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": "AddMinterAuthorityArgs"
+          }
+        }
+      ]
+    },
+    {
+      "name": "removeMinterAuthority",
+      "accounts": [
+        {
+          "name": "minter",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "feePayer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": "RemoveMinterAuthorityArgs"
+          }
+        }
+      ]
+    },
+    {
       "name": "mintMinterWns",
       "accounts": [
         {
@@ -222,6 +283,47 @@ export type TokengatorMinter = {
           }
         }
       ]
+    },
+    {
+      "name": "removeMinter",
+      "accounts": [
+        {
+          "name": "minter",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "mint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "feePayer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
     }
   ],
   "accounts": [
@@ -302,7 +404,7 @@ export type TokengatorMinter = {
   ],
   "types": [
     {
-      "name": "AddPresetAuthorityArgs",
+      "name": "AddMinterAuthorityArgs",
       "type": {
         "kind": "struct",
         "fields": [
@@ -314,7 +416,19 @@ export type TokengatorMinter = {
       }
     },
     {
-      "name": "CreateMinterWNSArgs",
+      "name": "RemoveMinterAuthorityArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authorityToRemove",
+            "type": "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CreateMinterArgs",
       "type": {
         "kind": "struct",
         "fields": [
@@ -372,7 +486,7 @@ export type TokengatorMinter = {
       }
     },
     {
-      "name": "CreateMinterArgs",
+      "name": "CreateMinterWNSArgs",
       "type": {
         "kind": "struct",
         "fields": [
@@ -445,18 +559,6 @@ export type TokengatorMinter = {
           {
             "name": "uri",
             "type": "string"
-          }
-        ]
-      }
-    },
-    {
-      "name": "RemovePresetAuthorityArgs",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "authorityToRemove",
-            "type": "publicKey"
           }
         ]
       }
@@ -869,6 +971,67 @@ export const IDL: TokengatorMinter = {
       ]
     },
     {
+      "name": "addMinterAuthority",
+      "accounts": [
+        {
+          "name": "minter",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "feePayer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": "AddMinterAuthorityArgs"
+          }
+        }
+      ]
+    },
+    {
+      "name": "removeMinterAuthority",
+      "accounts": [
+        {
+          "name": "minter",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "feePayer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": "RemoveMinterAuthorityArgs"
+          }
+        }
+      ]
+    },
+    {
       "name": "mintMinterWns",
       "accounts": [
         {
@@ -951,6 +1114,47 @@ export const IDL: TokengatorMinter = {
           }
         }
       ]
+    },
+    {
+      "name": "removeMinter",
+      "accounts": [
+        {
+          "name": "minter",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "mint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "feePayer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
     }
   ],
   "accounts": [
@@ -1031,7 +1235,7 @@ export const IDL: TokengatorMinter = {
   ],
   "types": [
     {
-      "name": "AddPresetAuthorityArgs",
+      "name": "AddMinterAuthorityArgs",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1043,7 +1247,19 @@ export const IDL: TokengatorMinter = {
       }
     },
     {
-      "name": "CreateMinterWNSArgs",
+      "name": "RemoveMinterAuthorityArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authorityToRemove",
+            "type": "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CreateMinterArgs",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1101,7 +1317,7 @@ export const IDL: TokengatorMinter = {
       }
     },
     {
-      "name": "CreateMinterArgs",
+      "name": "CreateMinterWNSArgs",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1174,18 +1390,6 @@ export const IDL: TokengatorMinter = {
           {
             "name": "uri",
             "type": "string"
-          }
-        ]
-      }
-    },
-    {
-      "name": "RemovePresetAuthorityArgs",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "authorityToRemove",
-            "type": "publicKey"
           }
         ]
       }

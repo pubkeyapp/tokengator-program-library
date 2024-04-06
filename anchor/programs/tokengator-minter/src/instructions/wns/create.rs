@@ -60,7 +60,7 @@ pub struct CreateMinterWNS<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn create_wns(ctx: Context<CreateMinterWNS>, args: CreateMinterWNSArgs) -> Result<()> {
+pub fn create(ctx: Context<CreateMinterWNS>, args: CreateMinterWNSArgs) -> Result<()> {
     let minter = &mut ctx.accounts.minter;
     let group = &mut ctx.accounts.group;
     let manager = &mut ctx.accounts.manager;

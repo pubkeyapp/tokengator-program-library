@@ -16,7 +16,10 @@ import { TokengatorMinter } from '../target/types/tokengator_minter'
 import { WenNewStandard } from '../target/types/wen_new_standard'
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
+  NATIVE_MINT_2022,
   TOKEN_2022_PROGRAM_ID,
+  createWrappedNativeAccount,
+  getAccount,
   getAssociatedTokenAddressSync,
   getMint,
   getTokenMetadata,
@@ -76,6 +79,7 @@ describe('tokengator-minter', () => {
   const wnsProgramId = (anchor.workspace.WenNewStandard as Program<WenNewStandard>).programId
 
   const authority = Keypair.generate()
+  const funder = Keypair.generate()
   const groupMintKeypair = Keypair.generate()
   const memberMintKeypair = Keypair.generate()
 
@@ -86,6 +90,12 @@ describe('tokengator-minter', () => {
     await provider.connection.confirmTransaction({
       ...(await provider.connection.getLatestBlockhash('confirmed')),
       signature: await provider.connection.requestAirdrop(authority.publicKey, 1 * LAMPORTS_PER_SOL),
+    })
+
+    console.log('Airdropping funder 1 SOL:', funder.publicKey.toString())
+    await provider.connection.confirmTransaction({
+      ...(await provider.connection.getLatestBlockhash('confirmed')),
+      signature: await provider.connection.requestAirdrop(funder.publicKey, 1 * LAMPORTS_PER_SOL),
     })
   })
 
@@ -110,9 +120,9 @@ describe('tokengator-minter', () => {
       name,
       description,
       imageUrl,
-      paymentConfig,
+      paymentConfig: createMinterPaymentConfig,
       minterConfig: {
-        applicationConfig: { paymentConfig: appPaymentConfig, identities },
+        applicationConfig: { paymentConfig: mintMinterPaymentConfig, identities },
         metadataConfig,
       },
     } = {
@@ -127,7 +137,7 @@ describe('tokengator-minter', () => {
         // At a price of 0.1 SOL
         price: 0.1 * LAMPORTS_PER_SOL,
         // The mint is the SPL Token mint of the payment
-        mint: new PublicKey('So11111111111111111111111111111111111111112'),
+        mint: NATIVE_MINT_2022,
         // The community can use this preset for 30 days
         days: 30,
         // The expires_at field is calculated based on the current timestamp and the days field at time of minting
@@ -153,7 +163,7 @@ describe('tokengator-minter', () => {
           paymentConfig: {
             amount: 1,
             price: 0.01 * LAMPORTS_PER_SOL,
-            mint: new PublicKey('So11111111111111111111111111111111111111112'),
+            mint: NATIVE_MINT_2022,
             days: 30,
             // The expires_at field is calculated based on the current timestamp and the days field at time of minting
             expiresAt: new Date().getTime() + 1000 * 60 * 60 * 24 * 30, // 30 days
@@ -161,6 +171,33 @@ describe('tokengator-minter', () => {
         },
       },
     }
+
+    const funderPaymentTokenAccount = await createWrappedNativeAccount(
+      provider.connection,
+      funder,
+      funder.publicKey,
+      createMinterPaymentConfig.price,
+      undefined,
+      { commitment: 'confirmed' },
+      TOKEN_2022_PROGRAM_ID,
+      NATIVE_MINT_2022,
+    )
+
+    const authorityPaymentTokenAccount = getAssociatedTokenAddressSync(
+      NATIVE_MINT_2022,
+      authority.publicKey,
+      false,
+      TOKEN_2022_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID,
+    )
+
+    const feePayerPaymentTokenAccount = getAssociatedTokenAddressSync(
+      NATIVE_MINT_2022,
+      remoteFeePayer.publicKey,
+      false,
+      TOKEN_2022_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID,
+    )
 
     const slot = await provider.connection.getSlot('confirmed')
     const { blockhash, lastValidBlockHeight } = await provider.connection.getLatestBlockhash()
@@ -179,6 +216,11 @@ describe('tokengator-minter', () => {
         authority.publicKey,
         remoteFeePayer.publicKey,
         groupMintKeypair.publicKey,
+        funderPaymentTokenAccount,
+        feePayerPaymentTokenAccount,
+        authorityPaymentTokenAccount,
+        NATIVE_MINT_2022,
+        funder.publicKey,
         SYSVAR_RENT_PUBKEY,
         wnsProgramId,
         ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -203,6 +245,23 @@ describe('tokengator-minter', () => {
     await provider.connection.confirmTransaction({ blockhash, lastValidBlockHeight, signature: sig })
 
     await sleep(750)
+
+    const prepareForPaymentIx = await program.methods
+      .prepareForPayment({
+        paymentAmount: new anchor.BN(createMinterPaymentConfig.price),
+      })
+      .accounts({
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        tokenProgram: TOKEN_2022_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+        authority: authority.publicKey,
+        funder: funder.publicKey,
+        mint: createMinterPaymentConfig.mint,
+        authorityTokenAccount: authorityPaymentTokenAccount,
+        funderTokenAccount: funderPaymentTokenAccount,
+      })
+      .instruction()
+
     const createMinterWnsIx = await program.methods
       .createMinterWns({
         community: 'pubkey',
@@ -225,11 +284,11 @@ describe('tokengator-minter', () => {
             }
           }),
           paymentConfig: {
-            amount: appPaymentConfig.amount,
-            days: appPaymentConfig.days,
-            expiresAt: new anchor.BN(appPaymentConfig.expiresAt),
-            mint: appPaymentConfig.mint,
-            price: new anchor.BN(appPaymentConfig.price),
+            amount: mintMinterPaymentConfig.amount,
+            days: mintMinterPaymentConfig.days,
+            expiresAt: new anchor.BN(mintMinterPaymentConfig.expiresAt),
+            mint: mintMinterPaymentConfig.mint,
+            price: new anchor.BN(mintMinterPaymentConfig.price),
           },
         },
         metadataConfig: {
@@ -239,11 +298,10 @@ describe('tokengator-minter', () => {
           uri: metadataConfig.uri,
         },
         paymentConfig: {
-          amount: paymentConfig.amount,
-          days: paymentConfig.days,
-          expiresAt: new anchor.BN(paymentConfig.expiresAt),
-          mint: paymentConfig.mint,
-          price: new anchor.BN(paymentConfig.price),
+          amount: createMinterPaymentConfig.amount,
+          days: createMinterPaymentConfig.days,
+          mint: createMinterPaymentConfig.mint,
+          price: new anchor.BN(createMinterPaymentConfig.price),
         },
       })
       .accounts({
@@ -251,6 +309,9 @@ describe('tokengator-minter', () => {
         group,
         manager,
         minterTokenAccount,
+        authorityTokenAccount: authorityPaymentTokenAccount,
+        feePayerTokenAccount: feePayerPaymentTokenAccount,
+        paymentMint: NATIVE_MINT_2022,
         authority: authority.publicKey,
         feePayer: remoteFeePayer.publicKey,
         mint: groupMintKeypair.publicKey,
@@ -267,14 +328,19 @@ describe('tokengator-minter', () => {
 
     if (value) {
       const { blockhash, lastValidBlockHeight } = await provider.connection.getLatestBlockhash()
+
       const transactionMessage = new TransactionMessage({
-        instructions: [ComputeBudgetProgram.setComputeUnitLimit({ units: 250_000 }), createMinterWnsIx],
+        instructions: [
+          ComputeBudgetProgram.setComputeUnitLimit({ units: 350_000 }),
+          prepareForPaymentIx,
+          createMinterWnsIx,
+        ],
         payerKey: remoteFeePayer.publicKey,
         recentBlockhash: blockhash,
       }).compileToV0Message([value])
 
       const transaction = new VersionedTransaction(transactionMessage)
-      transaction.sign([remoteFeePayer.payer, authority, groupMintKeypair])
+      transaction.sign([funder, remoteFeePayer.payer, authority, groupMintKeypair])
       const sig = await provider.connection.sendTransaction(transaction, { skipPreflight: true })
       await provider.connection.confirmTransaction({ blockhash, lastValidBlockHeight, signature: sig }, 'confirmed')
 
@@ -289,6 +355,30 @@ describe('tokengator-minter', () => {
 
       const postBalance = await provider.connection.getBalance(authority.publicKey)
       expect(postBalance).toStrictEqual(1 * LAMPORTS_PER_SOL)
+
+      const feePayerPaymentTokenData = await getAccount(
+        provider.connection,
+        feePayerPaymentTokenAccount,
+        'confirmed',
+        TOKEN_2022_PROGRAM_ID,
+      )
+      const authorityPaymentTokenData = await getAccount(
+        provider.connection,
+        authorityPaymentTokenAccount,
+        'confirmed',
+        TOKEN_2022_PROGRAM_ID,
+      )
+      const funderPaymentTokenData = await getAccount(
+        provider.connection,
+        funderPaymentTokenAccount,
+        'confirmed',
+        TOKEN_2022_PROGRAM_ID,
+      )
+
+      // Payments
+      expect(funderPaymentTokenData.amount.toString()).toEqual('0')
+      expect(authorityPaymentTokenData.amount.toString()).toEqual('0')
+      expect(feePayerPaymentTokenData.amount.toString()).toEqual(createMinterPaymentConfig.price.toString())
 
       // Minter
       expect(minterBump).toStrictEqual(minterData.bump)
@@ -507,7 +597,7 @@ describe('tokengator-minter', () => {
       const sig = await provider.connection.sendTransaction(transaction, { skipPreflight: true })
       await provider.connection.confirmTransaction({ blockhash, lastValidBlockHeight, signature: sig }, 'confirmed')
 
-      const activityData = await program.account.activity.fetch(activity)
+      const activityData = await program.account.activity.fetch(activity, 'confirmed')
 
       const postBalance = await provider.connection.getBalance(authority.publicKey)
       expect(postBalance).toStrictEqual(1 * LAMPORTS_PER_SOL)
@@ -565,7 +655,7 @@ describe('tokengator-minter', () => {
       const postBalance = await provider.connection.getBalance(authority.publicKey)
       expect(postBalance).toStrictEqual(1 * LAMPORTS_PER_SOL)
 
-      const activityData = await program.account.activity.fetch(activity)
+      const activityData = await program.account.activity.fetch(activity, 'confirmed')
       // Activity
       expect(activityData.entries).toStrictEqual([entry])
     }

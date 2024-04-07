@@ -1,7 +1,8 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::{get_associated_token_address_with_program_id, AssociatedToken},
-    token_2022::Token2022,
+    token_2022::{transfer_checked, Token2022, TransferChecked},
+    token_interface::{Mint, TokenAccount},
 };
 use wen_new_standard::{
     cpi::{
@@ -12,6 +13,7 @@ use wen_new_standard::{
     AddMetadataArgs, CreateGroupAccountArgs,
 };
 
+use crate::args::*;
 use crate::constants::*;
 use crate::errors::*;
 use crate::state::*;
@@ -56,6 +58,27 @@ pub struct CreateMinterWNS<'info> {
     pub fee_payer: Signer<'info>,
     pub authority: Signer<'info>,
 
+    #[account(
+      mut,
+      token::authority = authority,
+      token::mint = payment_mint,
+    )]
+    pub authority_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
+
+    #[account(
+      init,
+      payer = fee_payer,
+      associated_token::mint = payment_mint,
+      associated_token::authority = fee_payer,
+      associated_token::token_program = token_program
+    )]
+    pub fee_payer_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
+
+    #[account(
+      constraint = payment_mint.to_account_info().owner.eq(&token_program.key())
+    )]
+    pub payment_mint: Box<InterfaceAccount<'info, Mint>>,
+
     pub rent: Sysvar<'info, Rent>,
     pub wns_program: Program<'info, WenNewStandard>,
     pub token_program: Program<'info, Token2022>,
@@ -71,7 +94,10 @@ pub fn create(ctx: Context<CreateMinterWNS>, args: CreateMinterWNSArgs) -> Resul
     let authority = &ctx.accounts.authority;
     let fee_payer = &ctx.accounts.fee_payer;
     let mint = &ctx.accounts.mint;
+    let payment_mint = &ctx.accounts.payment_mint;
     let minter_token_account = &ctx.accounts.minter_token_account;
+    let authority_token_account = &ctx.accounts.authority_token_account;
+    let fee_payer_token_account = &ctx.accounts.fee_payer_token_account;
 
     let rent = &ctx.accounts.rent;
     let wns_program = &ctx.accounts.wns_program;
@@ -86,6 +112,30 @@ pub fn create(ctx: Context<CreateMinterWNS>, args: CreateMinterWNSArgs) -> Resul
 
     let community_id = fetch_community_id(&args.community);
 
+    let CreateMinterWNSArgs {
+        metadata_config,
+        transfer_fee_config,
+        interest_config,
+        application_config,
+        payment_config,
+        ..
+    } = args;
+
+    // Transfer payment for minter creation
+    transfer_checked(
+        CpiContext::new(
+            token_extensions_program.to_account_info(),
+            TransferChecked {
+                authority: authority.to_account_info(),
+                from: authority_token_account.to_account_info(),
+                to: fee_payer_token_account.to_account_info(),
+                mint: payment_mint.to_account_info(),
+            },
+        ),
+        payment_config.price.into(),
+        payment_mint.decimals,
+    )?;
+
     let expected_minter_token_account = get_associated_token_address_with_program_id(
         &minter_key,
         &mint_key,
@@ -99,19 +149,26 @@ pub fn create(ctx: Context<CreateMinterWNS>, args: CreateMinterWNSArgs) -> Resul
 
     check_for_wns_accounts(&mint_key, &group_key, &manager_key, &None, &None)?;
 
-    let CreateMinterWNSArgs {
-        metadata_config,
-        transfer_fee_config,
-        interest_config,
-        application_config,
-        payment_config,
-        ..
-    } = args;
+    let payment_config = PaymentConfig {
+        price: payment_config.price,
+        amount: payment_config.amount,
+        mint: payment_config.mint,
+        days: payment_config.days,
+        expires_at: Clock::get()?
+            .unix_timestamp
+            .checked_add(60 * 60 * 24 * i64::try_from(payment_config.days).unwrap())
+            .unwrap(),
+    };
+
+    let application_config = MinterApplicationConfig {
+        identities: application_config.identities,
+        payment_config: payment_config.clone(),
+    };
 
     // 1. Saving Minter onchain
     let minter_config = MinterConfig {
         mint: mint.key(),
-        application_config: application_config.clone(),
+        application_config,
         interest_config: interest_config.clone(),
         metadata_config: metadata_config.clone(),
         transfer_fee_config: transfer_fee_config.clone(),
@@ -126,8 +183,8 @@ pub fn create(ctx: Context<CreateMinterWNS>, args: CreateMinterWNSArgs) -> Resul
         image_url: args.image_url,
         fee_payer: ctx.accounts.fee_payer.key(),
         authorities: vec![authority.key()],
-        payment_config,
         minter_config,
+        payment_config,
     });
 
     minter.validate()?;
@@ -202,7 +259,7 @@ pub struct CreateMinterWNSArgs {
     pub name: String,
     pub description: String,
     pub image_url: String,
-    pub payment_config: PaymentConfig,
+    pub payment_config: PaymentConfigArgs,
     pub application_config: MinterApplicationConfig,
     pub metadata_config: MinterMetadataConfig,
     pub interest_config: Option<MinterInterestConfig>,

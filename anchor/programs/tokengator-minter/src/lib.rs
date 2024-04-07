@@ -3,6 +3,7 @@
 
 use anchor_lang::prelude::*;
 
+pub mod args;
 pub mod constants;
 pub mod errors;
 pub mod instructions;
@@ -16,6 +17,13 @@ declare_id!("GAToRDEEZmbXSe7ECcChQ1TsZCQXDBCtVhSd1Ypas9h6");
 #[program]
 pub mod tokengator_minter {
     use super::*;
+
+    pub fn prepare_for_payment(
+        ctx: Context<PrepareForPayment>,
+        args: PrepareForPaymentArgs,
+    ) -> Result<()> {
+        custom::prepare(ctx, args)
+    }
 
     pub fn create_minter(ctx: Context<CreateMinter>, args: CreateMinterArgs) -> Result<()> {
         custom::create(ctx, args)

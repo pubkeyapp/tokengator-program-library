@@ -3,6 +3,59 @@ export type TokengatorMinter = {
   "name": "tokengator_minter",
   "instructions": [
     {
+      "name": "prepareForPayment",
+      "accounts": [
+        {
+          "name": "funder",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "funderTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "authorityTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": "PrepareForPaymentArgs"
+          }
+        }
+      ]
+    },
+    {
       "name": "createMinter",
       "accounts": [
         {
@@ -103,6 +156,21 @@ export type TokengatorMinter = {
           "name": "authority",
           "isMut": false,
           "isSigner": true
+        },
+        {
+          "name": "authorityTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "feePayerTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "paymentMint",
+          "isMut": false,
+          "isSigner": false
         },
         {
           "name": "rent",
@@ -603,6 +671,30 @@ export type TokengatorMinter = {
   ],
   "types": [
     {
+      "name": "PaymentConfigArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "amount",
+            "type": "u16"
+          },
+          {
+            "name": "price",
+            "type": "u64"
+          },
+          {
+            "name": "mint",
+            "type": "publicKey"
+          },
+          {
+            "name": "days",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
       "name": "AppendActivityEntryArgs",
       "type": {
         "kind": "struct",
@@ -739,6 +831,18 @@ export type TokengatorMinter = {
       }
     },
     {
+      "name": "PrepareForPaymentArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "paymentAmount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
       "name": "UpdateMemberMetadataArgs",
       "type": {
         "kind": "struct",
@@ -786,7 +890,7 @@ export type TokengatorMinter = {
           {
             "name": "paymentConfig",
             "type": {
-              "defined": "PaymentConfig"
+              "defined": "PaymentConfigArgs"
             }
           },
           {
@@ -1166,6 +1270,59 @@ export const IDL: TokengatorMinter = {
   "name": "tokengator_minter",
   "instructions": [
     {
+      "name": "prepareForPayment",
+      "accounts": [
+        {
+          "name": "funder",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "funderTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "authorityTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": "PrepareForPaymentArgs"
+          }
+        }
+      ]
+    },
+    {
       "name": "createMinter",
       "accounts": [
         {
@@ -1266,6 +1423,21 @@ export const IDL: TokengatorMinter = {
           "name": "authority",
           "isMut": false,
           "isSigner": true
+        },
+        {
+          "name": "authorityTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "feePayerTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "paymentMint",
+          "isMut": false,
+          "isSigner": false
         },
         {
           "name": "rent",
@@ -1766,6 +1938,30 @@ export const IDL: TokengatorMinter = {
   ],
   "types": [
     {
+      "name": "PaymentConfigArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "amount",
+            "type": "u16"
+          },
+          {
+            "name": "price",
+            "type": "u64"
+          },
+          {
+            "name": "mint",
+            "type": "publicKey"
+          },
+          {
+            "name": "days",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
       "name": "AppendActivityEntryArgs",
       "type": {
         "kind": "struct",
@@ -1902,6 +2098,18 @@ export const IDL: TokengatorMinter = {
       }
     },
     {
+      "name": "PrepareForPaymentArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "paymentAmount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
       "name": "UpdateMemberMetadataArgs",
       "type": {
         "kind": "struct",
@@ -1949,7 +2157,7 @@ export const IDL: TokengatorMinter = {
           {
             "name": "paymentConfig",
             "type": {
-              "defined": "PaymentConfig"
+              "defined": "PaymentConfigArgs"
             }
           },
           {

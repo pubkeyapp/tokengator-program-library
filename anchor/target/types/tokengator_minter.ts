@@ -626,7 +626,7 @@ export type TokengatorMinter = {
           {
             "name": "points",
             "type": {
-              "option": "u64"
+              "option": "u8"
             }
           }
         ]
@@ -890,7 +890,7 @@ export type TokengatorMinter = {
           },
           {
             "name": "points",
-            "type": "u64"
+            "type": "u8"
           }
         ]
       }
@@ -1789,7 +1789,7 @@ export const IDL: TokengatorMinter = {
           {
             "name": "points",
             "type": {
-              "option": "u64"
+              "option": "u8"
             }
           }
         ]
@@ -2053,7 +2053,7 @@ export const IDL: TokengatorMinter = {
           },
           {
             "name": "points",
-            "type": "u64"
+            "type": "u8"
           }
         ]
       }

@@ -60,5 +60,5 @@ pub struct AppendActivityEntryArgs {
     pub timestamp: Option<i64>,
     pub message: String,
     pub url: Option<String>,
-    pub points: Option<u64>,
+    pub points: Option<u8>,
 }

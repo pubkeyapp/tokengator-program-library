@@ -24,6 +24,7 @@ import {
 
 const PREFIX = new TextEncoder().encode('tokengator_minter')
 const MINTER = new TextEncoder().encode('minter')
+const ACTIVITY = new TextEncoder().encode('activity')
 
 enum IdentityProvider {
   Discord = 'Discord',
@@ -34,6 +35,13 @@ enum IdentityProvider {
 
 function getMinterPda({ programId, mint, name }: { name: string; mint: PublicKey; programId: PublicKey }) {
   return PublicKey.findProgramAddressSync([PREFIX, MINTER, mint.toBuffer(), new TextEncoder().encode(name)], programId)
+}
+
+function getActivityPda({ programId, mint, label }: { label: string; mint: PublicKey; programId: PublicKey }) {
+  return PublicKey.findProgramAddressSync(
+    [PREFIX, ACTIVITY, mint.toBuffer(), new TextEncoder().encode(label)],
+    programId,
+  )
 }
 
 export function getWNSGroupPda(mint: PublicKey, programId: PublicKey) {
@@ -267,7 +275,7 @@ describe('tokengator-minter', () => {
 
       const transaction = new VersionedTransaction(transactionMessage)
       transaction.sign([remoteFeePayer.payer, authority, groupMintKeypair])
-      const sig = await provider.connection.sendTransaction(transaction)
+      const sig = await provider.connection.sendTransaction(transaction, { skipPreflight: true })
       await provider.connection.confirmTransaction({ blockhash, lastValidBlockHeight, signature: sig }, 'confirmed')
 
       const minterData = await program.account.minter.fetch(minter)
@@ -450,6 +458,116 @@ describe('tokengator-minter', () => {
         ['username', 'beeman'],
         ['preset', 'tourist-visa'],
       ])
+    }
+  })
+
+  it('Create Activity for Business Visa Member', async () => {
+    const label = 'gm'
+    const [minter] = getMinterPda({
+      name: 'Business Visa WNS',
+      mint: groupMintKeypair.publicKey,
+      programId: program.programId,
+    })
+
+    const [group] = getWNSGroupPda(groupMintKeypair.publicKey, wnsProgramId)
+    const [member] = getWNSMemberPda(memberMintKeypair.publicKey, wnsProgramId)
+    const [activity, activityBump] = getActivityPda({
+      label,
+      mint: memberMintKeypair.publicKey,
+      programId: program.programId,
+    })
+
+    if (lookupTableStore) {
+      const createActivityIx = await program.methods
+        .createActivity({
+          label,
+          endDate: null,
+          startDate: null,
+        })
+        .accounts({
+          minter,
+          activity,
+          group,
+          member,
+          feePayer: remoteFeePayer.publicKey,
+          mint: memberMintKeypair.publicKey,
+          systemProgram: SystemProgram.programId,
+        })
+        .instruction()
+
+      const { blockhash, lastValidBlockHeight } = await provider.connection.getLatestBlockhash()
+      const transactionMessage = new TransactionMessage({
+        instructions: [ComputeBudgetProgram.setComputeUnitLimit({ units: 30_000 }), createActivityIx],
+        payerKey: remoteFeePayer.publicKey,
+        recentBlockhash: blockhash,
+      }).compileToV0Message([lookupTableStore])
+
+      const transaction = new VersionedTransaction(transactionMessage)
+      transaction.sign([remoteFeePayer.payer])
+      const sig = await provider.connection.sendTransaction(transaction, { skipPreflight: true })
+      await provider.connection.confirmTransaction({ blockhash, lastValidBlockHeight, signature: sig }, 'confirmed')
+
+      const activityData = await program.account.activity.fetch(activity)
+
+      const postBalance = await provider.connection.getBalance(authority.publicKey)
+      expect(postBalance).toStrictEqual(1 * LAMPORTS_PER_SOL)
+
+      // Activity
+      expect(activityData.endDate).not.toBeNull()
+      expect(activityData.startDate).not.toBeNull()
+      expect(activityData.bump).toStrictEqual(activityBump)
+      expect(activityData.entries).toStrictEqual([])
+      expect(activityData.feePayer).toStrictEqual(remoteFeePayer.publicKey)
+      expect(activityData.label).toStrictEqual(label)
+      expect(activityData.member).toStrictEqual(member)
+      expect(activityData.mint).toStrictEqual(memberMintKeypair.publicKey)
+      expect(activityData.minter).toStrictEqual(minter)
+    }
+  })
+
+  it('Create entry for Activity', async () => {
+    const label = 'gm'
+    const [activity] = getActivityPda({
+      label,
+      mint: memberMintKeypair.publicKey,
+      programId: program.programId,
+    })
+
+    if (lookupTableStore) {
+      const entry = {
+        message: 'Secured a bounty',
+        points: 100,
+        timestamp: new anchor.BN(Math.round(Date.now() / 1000)),
+        url: 'https://gib.work',
+      }
+
+      const appendEntryToActivityIx = await program.methods
+        .appendActivityEntry(entry)
+        .accounts({
+          activity,
+          feePayer: remoteFeePayer.publicKey,
+          systemProgram: SystemProgram.programId,
+        })
+        .instruction()
+
+      const { blockhash, lastValidBlockHeight } = await provider.connection.getLatestBlockhash()
+      const transactionMessage = new TransactionMessage({
+        instructions: [ComputeBudgetProgram.setComputeUnitLimit({ units: 50_000 }), appendEntryToActivityIx],
+        payerKey: remoteFeePayer.publicKey,
+        recentBlockhash: blockhash,
+      }).compileToV0Message([lookupTableStore])
+
+      const transaction = new VersionedTransaction(transactionMessage)
+      transaction.sign([remoteFeePayer.payer])
+      const sig = await provider.connection.sendTransaction(transaction, { skipPreflight: true })
+      await provider.connection.confirmTransaction({ blockhash, lastValidBlockHeight, signature: sig }, 'confirmed')
+
+      const postBalance = await provider.connection.getBalance(authority.publicKey)
+      expect(postBalance).toStrictEqual(1 * LAMPORTS_PER_SOL)
+
+      const activityData = await program.account.activity.fetch(activity)
+      // Activity
+      expect(activityData.entries).toStrictEqual([entry])
     }
   })
 })

@@ -626,7 +626,7 @@
           {
             "name": "points",
             "type": {
-              "option": "u64"
+              "option": "u8"
             }
           }
         ]
@@ -890,7 +890,7 @@
           },
           {
             "name": "points",
-            "type": "u64"
+            "type": "u8"
           }
         ]
       }

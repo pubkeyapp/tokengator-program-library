@@ -7,7 +7,7 @@ pub struct Entry {
     pub timestamp: i64,
     pub message: String,
     pub url: Option<String>,
-    pub points: u64,
+    pub points: u8,
 }
 
 impl Entry {
@@ -15,7 +15,7 @@ impl Entry {
         8 + // timestamp
         MAX_ENTRY_MESSAGE_SIZE + // message
         1 + MAX_ENTRY_URL_SIZE + // url
-        8 // points
+        1 // points
     }
 
     pub fn validate(&self) -> Result<()> {

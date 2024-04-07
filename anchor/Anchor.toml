@@ -5,10 +5,10 @@ seeds = false
 skip-lint = false
 
 [programs.devnet]
-tokengator_minter = "gatorxhhdfsTpfkgB2QM4qwkwgSem2UgzPXLaD2ZGoY"
+tokengator_minter = "GAToRDEEZmbXSe7ECcChQ1TsZCQXDBCtVhSd1Ypas9h6"
 
 [programs.localnet]
-tokengator_minter = "gatorxhhdfsTpfkgB2QM4qwkwgSem2UgzPXLaD2ZGoY"
+tokengator_minter = "GAToRDEEZmbXSe7ECcChQ1TsZCQXDBCtVhSd1Ypas9h6"
 wen_new_standard = "wns1gDLt8fgLcGhWi5MqAqgXpwEP1JftKE9eZnXS1HM"
 
 [registry]

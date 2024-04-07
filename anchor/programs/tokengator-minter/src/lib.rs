@@ -11,7 +11,7 @@ pub mod utils;
 
 pub use instructions::*;
 
-declare_id!("gatorxhhdfsTpfkgB2QM4qwkwgSem2UgzPXLaD2ZGoY");
+declare_id!("GAToRDEEZmbXSe7ECcChQ1TsZCQXDBCtVhSd1Ypas9h6");
 
 #[program]
 pub mod tokengator_minter {

@@ -33,6 +33,22 @@ pub struct MintMinterWNS<'info> {
       mut,
       seeds = [
         PREFIX,
+        RECEIPT,
+        receipt.sender.as_ref(),
+        receipt.receiver.as_ref(),
+        receipt.payment_mint.as_ref(),
+      ],
+      bump = receipt.bump,
+      constraint = matches!(receipt.payment_type, ReceiptType::User) @ TokenGatorMinterError::InvalidReceipt,
+      constraint = receipt.receiver.eq(&authority.key()) @ TokenGatorMinterError::InvalidAuthority,
+      constraint = receipt.sender.eq(&receiver.key()) @ TokenGatorMinterError::InvalidReceiver,
+    )]
+    pub receipt: Account<'info, Receipt>,
+
+    #[account(
+      mut,
+      seeds = [
+        PREFIX,
         MINTER,
         &minter.minter_config.mint.as_ref(),
         &minter.name.as_bytes()
@@ -48,12 +64,14 @@ pub struct MintMinterWNS<'info> {
 
     #[account(mut)]
     /// CHECK: Checks done inside the handler function
-    pub authority_token_account: UncheckedAccount<'info>,
+    pub receiver_token_account: UncheckedAccount<'info>,
 
     #[account(mut)]
     pub fee_payer: Signer<'info>,
     #[account(mut)]
     pub authority: Signer<'info>,
+    #[account()]
+    pub receiver: SystemAccount<'info>,
 
     #[account(
       constraint = token_program.key().eq(&TOKEN_EXTENSIONS_PROGRAM_ID) @ TokenGatorMinterError::InvalidTokenProgram
@@ -71,10 +89,10 @@ pub fn mint(ctx: Context<MintMinterWNS>, args: MintMinterWNSArgs) -> Result<()> 
     let member = &mut ctx.accounts.member;
     let manager = &mut ctx.accounts.manager;
 
-    let authority = &ctx.accounts.authority;
+    let receiver = &ctx.accounts.receiver;
     let fee_payer = &ctx.accounts.fee_payer;
     let mint = &ctx.accounts.mint;
-    let authority_token_account = &ctx.accounts.authority_token_account;
+    let receiver_token_account = &ctx.accounts.receiver_token_account;
 
     let rent = &ctx.accounts.rent;
     let wns_program = &ctx.accounts.wns_program;
@@ -82,21 +100,21 @@ pub fn mint(ctx: Context<MintMinterWNS>, args: MintMinterWNSArgs) -> Result<()> 
     let system_program = &ctx.accounts.system_program;
     let associated_token_program = &ctx.accounts.associated_token_program;
 
-    let authority_key = authority.key();
+    let receiver_key = receiver.key();
     let minter_key = minter.key();
     let mint_key = mint.key();
     let member_key = member.key();
     let group_key = group.key();
     let manager_key = manager.key();
 
-    let expected_authority_token_account = get_associated_token_address_with_program_id(
-        &authority_key,
+    let expected_receiver_token_account = get_associated_token_address_with_program_id(
+        &receiver_key,
         &mint_key,
         &token_extensions_program.key(),
     );
     require_eq!(
-        expected_authority_token_account,
-        authority_token_account.key(),
+        expected_receiver_token_account,
+        receiver_token_account.key(),
         TokenGatorMinterError::InvalidAuthorityTokenAccount
     );
 
@@ -129,9 +147,9 @@ pub fn mint(ctx: Context<MintMinterWNS>, args: MintMinterWNSArgs) -> Result<()> 
                 authority: minter.to_account_info(),
                 manager: manager.to_account_info(),
                 mint: mint.to_account_info(),
-                mint_token_account: authority_token_account.to_account_info(),
+                mint_token_account: receiver_token_account.to_account_info(),
                 payer: fee_payer.to_account_info(),
-                receiver: authority.to_account_info(),
+                receiver: receiver.to_account_info(),
                 rent: rent.to_account_info(),
                 system_program: system_program.to_account_info(),
                 token_program: token_extensions_program.to_account_info(),
@@ -148,13 +166,28 @@ pub fn mint(ctx: Context<MintMinterWNS>, args: MintMinterWNSArgs) -> Result<()> 
 
     // 2. Updating additional metadata
     if let Some(metadata) = args.metadata {
-        let metadata_args = metadata
-            .iter()
-            .map(|m| AddMetadataArgs {
-                field: m[0].clone(),
-                value: m[1].clone(),
-            })
-            .collect();
+        let issued_at = Clock::get()?.unix_timestamp;
+        let expires_at = issued_at
+            .checked_add(
+                60 * 60
+                    * 24
+                    * i64::try_from(minter.minter_config.application_config.payment_config.days)
+                        .unwrap(),
+            )
+            .unwrap();
+
+        let metadata_args: Vec<AddMetadataArgs> = [
+            metadata,
+            vec![["issued_at".to_owned(), issued_at.to_string()]],
+            vec![["expires_at".to_owned(), expires_at.to_string()]],
+        ]
+        .concat()
+        .iter()
+        .map(|m| AddMetadataArgs {
+            field: m[0].clone(),
+            value: m[1].clone(),
+        })
+        .collect();
 
         add_metadata(
             CpiContext::new_with_signer(
@@ -187,6 +220,8 @@ pub fn mint(ctx: Context<MintMinterWNS>, args: MintMinterWNSArgs) -> Result<()> 
         },
         signer_seeds,
     ))?;
+
+    ctx.accounts.receipt.close(fee_payer.to_account_info())?;
 
     Ok(())
 }

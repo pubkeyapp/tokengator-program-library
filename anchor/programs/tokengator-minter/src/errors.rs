@@ -6,6 +6,12 @@ pub enum TokenGatorMinterError {
     InvalidAccountOwner,
     #[msg("Invalid Fee payer")]
     InvalidFeePayer,
+    #[msg("Invalid authority")]
+    InvalidAuthority,
+    #[msg("Invalid receiver")]
+    InvalidReceiver,
+    #[msg("Invalid receipt")]
+    InvalidReceipt,
     #[msg("Account unauthorized to perform this action")]
     UnAuthorized,
     #[msg("Authority already exists")]

@@ -1,6 +1,9 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{
-    associated_token::{get_associated_token_address_with_program_id, AssociatedToken},
+    associated_token::{
+        create as create_associated_token, get_associated_token_address_with_program_id,
+        AssociatedToken, Create as CreateAssociatedToken,
+    },
     token_2022::{transfer_checked, Token2022, TransferChecked},
     token_interface::{Mint, TokenAccount},
 };
@@ -29,6 +32,23 @@ pub struct CreateMinterWNS<'info> {
     /// CHECK: PDA checks done below
     pub manager: UncheckedAccount<'info>,
     /** */
+
+    #[account(
+      mut,
+      seeds = [
+        PREFIX,
+        RECEIPT,
+        receipt.sender.as_ref(),
+        receipt.receiver.as_ref(),
+        receipt.payment_mint.as_ref(),
+      ],
+      bump = receipt.bump,
+      constraint = matches!(receipt.payment_type, ReceiptType::Community) @ TokenGatorMinterError::InvalidReceipt,
+      constraint = receipt.receiver.eq(&authority.key()) @ TokenGatorMinterError::InvalidAuthority,
+      constraint = receipt.receiver_token_account.eq(&authority_token_account.key()) @ TokenGatorMinterError::InvalidAuthority,
+      has_one = payment_mint @ TokenGatorMinterError::InvalidMint,
+    )]
+    pub receipt: Account<'info, Receipt>,
 
     #[account(
       init,
@@ -65,14 +85,9 @@ pub struct CreateMinterWNS<'info> {
     )]
     pub authority_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    #[account(
-      init,
-      payer = fee_payer,
-      associated_token::mint = payment_mint,
-      associated_token::authority = fee_payer,
-      associated_token::token_program = token_program
-    )]
-    pub fee_payer_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
+    /// CHECK: PDA checks done below
+    #[account(mut)]
+    pub fee_payer_token_account: UncheckedAccount<'info>,
 
     #[account(
       constraint = payment_mint.to_account_info().owner.eq(&token_program.key())
@@ -94,10 +109,7 @@ pub fn create(ctx: Context<CreateMinterWNS>, args: CreateMinterWNSArgs) -> Resul
     let authority = &ctx.accounts.authority;
     let fee_payer = &ctx.accounts.fee_payer;
     let mint = &ctx.accounts.mint;
-    let payment_mint = &ctx.accounts.payment_mint;
     let minter_token_account = &ctx.accounts.minter_token_account;
-    let authority_token_account = &ctx.accounts.authority_token_account;
-    let fee_payer_token_account = &ctx.accounts.fee_payer_token_account;
 
     let rent = &ctx.accounts.rent;
     let wns_program = &ctx.accounts.wns_program;
@@ -122,18 +134,41 @@ pub fn create(ctx: Context<CreateMinterWNS>, args: CreateMinterWNSArgs) -> Resul
     } = args;
 
     // Transfer payment for minter creation
+    let expected_fee_payer_token_account = get_associated_token_address_with_program_id(
+        &ctx.accounts.fee_payer.key(),
+        &ctx.accounts.payment_mint.key(),
+        &ctx.accounts.token_program.key(),
+    );
+
+    require_eq!(
+        expected_fee_payer_token_account,
+        ctx.accounts.fee_payer_token_account.key()
+    );
+
+    create_associated_token(CpiContext::new(
+        ctx.accounts.associated_token_program.to_account_info(),
+        CreateAssociatedToken {
+            payer: ctx.accounts.fee_payer.to_account_info(),
+            associated_token: ctx.accounts.fee_payer_token_account.to_account_info(),
+            authority: ctx.accounts.fee_payer.to_account_info(),
+            mint: ctx.accounts.payment_mint.to_account_info(),
+            system_program: ctx.accounts.system_program.to_account_info(),
+            token_program: ctx.accounts.token_program.to_account_info(),
+        },
+    ))?;
+
     transfer_checked(
         CpiContext::new(
             token_extensions_program.to_account_info(),
             TransferChecked {
-                authority: authority.to_account_info(),
-                from: authority_token_account.to_account_info(),
-                to: fee_payer_token_account.to_account_info(),
-                mint: payment_mint.to_account_info(),
+                authority: ctx.accounts.authority.to_account_info(),
+                from: ctx.accounts.authority_token_account.to_account_info(),
+                to: ctx.accounts.fee_payer_token_account.to_account_info(),
+                mint: ctx.accounts.payment_mint.to_account_info(),
             },
         ),
         payment_config.price.into(),
-        payment_mint.decimals,
+        ctx.accounts.payment_mint.decimals,
     )?;
 
     let expected_minter_token_account = get_associated_token_address_with_program_id(
@@ -249,6 +284,9 @@ pub fn create(ctx: Context<CreateMinterWNS>, args: CreateMinterWNSArgs) -> Resul
             metadata_args,
         )?;
     }
+
+    // 4. Closing receipt
+    ctx.accounts.receipt.close(fee_payer.to_account_info())?;
 
     Ok(())
 }

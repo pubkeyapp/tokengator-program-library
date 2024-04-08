@@ -28,12 +28,18 @@ import {
 const PREFIX = new TextEncoder().encode('tokengator_minter')
 const MINTER = new TextEncoder().encode('minter')
 const ACTIVITY = new TextEncoder().encode('activity')
+const RECEIPT = new TextEncoder().encode('receipt')
 
 enum IdentityProvider {
   Discord = 'Discord',
   GitHub = 'GitHub',
   Google = 'Google',
   Twitter = 'Twitter',
+}
+
+export enum ReceiptType {
+  User = 0,
+  Community = 1,
 }
 
 function getMinterPda({ programId, mint, name }: { name: string; mint: PublicKey; programId: PublicKey }) {
@@ -43,6 +49,23 @@ function getMinterPda({ programId, mint, name }: { name: string; mint: PublicKey
 function getActivityPda({ programId, mint, label }: { label: string; mint: PublicKey; programId: PublicKey }) {
   return PublicKey.findProgramAddressSync(
     [PREFIX, ACTIVITY, mint.toBuffer(), new TextEncoder().encode(label)],
+    programId,
+  )
+}
+
+function getReceiptPda({
+  programId,
+  sender,
+  receiver,
+  paymentMint,
+}: {
+  sender: PublicKey
+  receiver: PublicKey
+  paymentMint: PublicKey
+  programId: PublicKey
+}) {
+  return PublicKey.findProgramAddressSync(
+    [PREFIX, RECEIPT, sender.toBuffer(), receiver.toBuffer(), paymentMint.toBuffer()],
     programId,
   )
 }
@@ -80,10 +103,67 @@ describe('tokengator-minter', () => {
 
   const authority = Keypair.generate()
   const funder = Keypair.generate()
+  const user = Keypair.generate()
   const groupMintKeypair = Keypair.generate()
   const memberMintKeypair = Keypair.generate()
 
   let lookupTableStore: AddressLookupTableAccount | null
+
+  const {
+    name,
+    description,
+    imageUrl,
+    paymentConfig: createMinterPaymentConfig,
+    minterConfig: {
+      applicationConfig: { paymentConfig: mintMinterPaymentConfig, identities },
+      metadataConfig,
+    },
+  } = {
+    name: 'Business Visa WNS',
+    description:
+      'The Business Visa preset is a preset that is used for business purposes. The end user pays to obtain the document and it expires after a certain period of time.',
+    imageUrl: `https://devnet.tokengator.app/api/preset/business-visa.png`,
+    // NEW: We add a payment_config field to the preset
+    paymentConfig: {
+      // The community can mint 100 Business Visa documents
+      amount: 100,
+      // At a price of 0.1 SOL
+      price: 0.1 * LAMPORTS_PER_SOL,
+      // The mint is the SPL Token mint of the payment
+      mint: NATIVE_MINT_2022,
+      // The community can use this preset for 30 days
+      days: 30,
+      // The expires_at field is calculated based on the current timestamp and the days field at time of minting
+      expiresAt: new Date().getTime() + 1000 * 60 * 60 * 24 * 30, // 30 days
+    },
+    minterConfig: {
+      metadataConfig: {
+        uri: `https://devnet.tokengator.app/api/metadata/json/${groupMintKeypair.publicKey.toString()}.json`,
+        name: 'Business Visa',
+        symbol: 'BV',
+        metadata: [
+          ['preset', 'business-visa'],
+          ['community', 'tokengator'],
+          ['preset2', 'business-visa2'],
+        ],
+      },
+      // NEW: We add an application_config field to the minter_config
+      applicationConfig: {
+        // In this case, the user needs to link their Discord and Twitter accounts before they can apply
+        identities: [IdentityProvider.Discord, IdentityProvider.Twitter],
+        // We set the price to 0.01 SOL and the payment is valid for 30 days
+        // The expires_at field is calculated based on the current timestamp and the days field at time of minting
+        paymentConfig: {
+          amount: 1,
+          price: 0.01 * LAMPORTS_PER_SOL,
+          mint: NATIVE_MINT_2022,
+          days: 30,
+          // The expires_at field is calculated based on the current timestamp and the days field at time of minting
+          expiresAt: new Date().getTime() + 1000 * 60 * 60 * 24 * 30, // 30 days
+        },
+      },
+    },
+  }
 
   beforeAll(async () => {
     console.log('Airdropping authority 1 SOL:', authority.publicKey.toString())
@@ -97,6 +177,12 @@ describe('tokengator-minter', () => {
       ...(await provider.connection.getLatestBlockhash('confirmed')),
       signature: await provider.connection.requestAirdrop(funder.publicKey, 1 * LAMPORTS_PER_SOL),
     })
+
+    console.log('Airdropping user 1 SOL:', user.publicKey.toString())
+    await provider.connection.confirmTransaction({
+      ...(await provider.connection.getLatestBlockhash('confirmed')),
+      signature: await provider.connection.requestAirdrop(user.publicKey, 1 * LAMPORTS_PER_SOL),
+    })
   })
 
   it('Create Business Visa TokengatorMinter', async () => {
@@ -105,6 +191,14 @@ describe('tokengator-minter', () => {
       mint: groupMintKeypair.publicKey,
       programId: program.programId,
     })
+
+    const [receipt] = getReceiptPda({
+      paymentMint: NATIVE_MINT_2022,
+      sender: funder.publicKey,
+      receiver: authority.publicKey,
+      programId: program.programId,
+    })
+
     const [group] = getWNSGroupPda(groupMintKeypair.publicKey, wnsProgramId)
     const [manager] = getWNSManagerPda(wnsProgramId)
 
@@ -116,67 +210,22 @@ describe('tokengator-minter', () => {
       ASSOCIATED_TOKEN_PROGRAM_ID,
     )
 
-    const {
-      name,
-      description,
-      imageUrl,
-      paymentConfig: createMinterPaymentConfig,
-      minterConfig: {
-        applicationConfig: { paymentConfig: mintMinterPaymentConfig, identities },
-        metadataConfig,
-      },
-    } = {
-      name: 'Business Visa WNS',
-      description:
-        'The Business Visa preset is a preset that is used for business purposes. The end user pays to obtain the document and it expires after a certain period of time.',
-      imageUrl: `https://devnet.tokengator.app/api/preset/business-visa.png`,
-      // NEW: We add a payment_config field to the preset
-      paymentConfig: {
-        // The community can mint 100 Business Visa documents
-        amount: 100,
-        // At a price of 0.1 SOL
-        price: 0.1 * LAMPORTS_PER_SOL,
-        // The mint is the SPL Token mint of the payment
-        mint: NATIVE_MINT_2022,
-        // The community can use this preset for 30 days
-        days: 30,
-        // The expires_at field is calculated based on the current timestamp and the days field at time of minting
-        expiresAt: new Date().getTime() + 1000 * 60 * 60 * 24 * 30, // 30 days
-      },
-      minterConfig: {
-        metadataConfig: {
-          uri: `https://devnet.tokengator.app/api/metadata/json/${groupMintKeypair.publicKey.toString()}.json`,
-          name: 'Business Visa',
-          symbol: 'BV',
-          metadata: [
-            ['preset', 'business-visa'],
-            ['community', 'tokengator'],
-            ['preset2', 'business-visa2'],
-          ],
-        },
-        // NEW: We add an application_config field to the minter_config
-        applicationConfig: {
-          // In this case, the user needs to link their Discord and Twitter accounts before they can apply
-          identities: [IdentityProvider.Discord, IdentityProvider.Twitter],
-          // We set the price to 0.01 SOL and the payment is valid for 30 days
-          // The expires_at field is calculated based on the current timestamp and the days field at time of minting
-          paymentConfig: {
-            amount: 1,
-            price: 0.01 * LAMPORTS_PER_SOL,
-            mint: NATIVE_MINT_2022,
-            days: 30,
-            // The expires_at field is calculated based on the current timestamp and the days field at time of minting
-            expiresAt: new Date().getTime() + 1000 * 60 * 60 * 24 * 30, // 30 days
-          },
-        },
-      },
-    }
-
     const funderPaymentTokenAccount = await createWrappedNativeAccount(
       provider.connection,
       funder,
       funder.publicKey,
       createMinterPaymentConfig.price,
+      undefined,
+      { commitment: 'confirmed' },
+      TOKEN_2022_PROGRAM_ID,
+      NATIVE_MINT_2022,
+    )
+
+    const userPaymentTokenAccount = await createWrappedNativeAccount(
+      provider.connection,
+      user,
+      user.publicKey,
+      mintMinterPaymentConfig.price,
       undefined,
       { commitment: 'confirmed' },
       TOKEN_2022_PROGRAM_ID,
@@ -213,9 +262,11 @@ describe('tokengator-minter', () => {
         group,
         manager,
         minterTokenAccount,
+        user.publicKey,
         authority.publicKey,
         remoteFeePayer.publicKey,
         groupMintKeypair.publicKey,
+        userPaymentTokenAccount,
         funderPaymentTokenAccount,
         feePayerPaymentTokenAccount,
         authorityPaymentTokenAccount,
@@ -249,16 +300,19 @@ describe('tokengator-minter', () => {
     const prepareForPaymentIx = await program.methods
       .prepareForPayment({
         paymentAmount: new anchor.BN(createMinterPaymentConfig.price),
+        paymentType: { community: {} },
       })
       .accounts({
         associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
         tokenProgram: TOKEN_2022_PROGRAM_ID,
         systemProgram: SystemProgram.programId,
-        authority: authority.publicKey,
-        funder: funder.publicKey,
+        receiver: authority.publicKey,
+        sender: funder.publicKey,
         mint: createMinterPaymentConfig.mint,
-        authorityTokenAccount: authorityPaymentTokenAccount,
-        funderTokenAccount: funderPaymentTokenAccount,
+        senderTokenAccount: funderPaymentTokenAccount,
+        receiverTokenAccount: authorityPaymentTokenAccount,
+        feePayer: remoteFeePayer.publicKey,
+        receipt,
       })
       .instruction()
 
@@ -308,6 +362,7 @@ describe('tokengator-minter', () => {
         minter,
         group,
         manager,
+        receipt,
         minterTokenAccount,
         authorityTokenAccount: authorityPaymentTokenAccount,
         feePayerTokenAccount: feePayerPaymentTokenAccount,
@@ -416,6 +471,14 @@ describe('tokengator-minter', () => {
       mint: groupMintKeypair.publicKey,
       programId: program.programId,
     })
+
+    const [receipt] = getReceiptPda({
+      paymentMint: NATIVE_MINT_2022,
+      sender: user.publicKey,
+      receiver: authority.publicKey,
+      programId: program.programId,
+    })
+
     const [group] = getWNSGroupPda(groupMintKeypair.publicKey, wnsProgramId)
     const [member] = getWNSMemberPda(memberMintKeypair.publicKey, wnsProgramId)
     const [manager] = getWNSManagerPda(wnsProgramId)
@@ -431,8 +494,24 @@ describe('tokengator-minter', () => {
       ],
     }
 
-    const authorityTokenAccount = getAssociatedTokenAddressSync(
+    const userNFTTokenAccount = getAssociatedTokenAddressSync(
       memberMintKeypair.publicKey,
+      user.publicKey,
+      false,
+      TOKEN_2022_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID,
+    )
+
+    const userPaymentTokenAccount = getAssociatedTokenAddressSync(
+      NATIVE_MINT_2022,
+      user.publicKey,
+      false,
+      TOKEN_2022_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID,
+    )
+
+    const authorityPaymentTokenAccount = getAssociatedTokenAddressSync(
+      NATIVE_MINT_2022,
       authority.publicKey,
       false,
       TOKEN_2022_PROGRAM_ID,
@@ -440,6 +519,26 @@ describe('tokengator-minter', () => {
     )
 
     if (lookupTableStore) {
+      const prepareForPaymentIx = await program.methods
+        .prepareForPayment({
+          paymentAmount: new anchor.BN(mintMinterPaymentConfig.price),
+          paymentType: { user: {} },
+        })
+        .accounts({
+          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+          tokenProgram: TOKEN_2022_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
+          mint: mintMinterPaymentConfig.mint,
+          sender: user.publicKey,
+          receiver: authority.publicKey,
+          senderTokenAccount: userPaymentTokenAccount,
+          receiverTokenAccount: authorityPaymentTokenAccount,
+          feePayer: remoteFeePayer.publicKey,
+          receipt,
+        })
+        .signers([user])
+        .instruction()
+
       const mintMinterWnsIx = await program.methods
         .mintMinterWns({ name, symbol, uri, metadata })
         .accounts({
@@ -447,7 +546,9 @@ describe('tokengator-minter', () => {
           group,
           manager,
           member,
-          authorityTokenAccount,
+          receiverTokenAccount: userNFTTokenAccount,
+          receiver: user.publicKey,
+          receipt,
           authority: authority.publicKey,
           feePayer: remoteFeePayer.publicKey,
           mint: memberMintKeypair.publicKey,
@@ -462,13 +563,17 @@ describe('tokengator-minter', () => {
 
       const { blockhash, lastValidBlockHeight } = await provider.connection.getLatestBlockhash()
       const transactionMessage = new TransactionMessage({
-        instructions: [ComputeBudgetProgram.setComputeUnitLimit({ units: 250_000 }), mintMinterWnsIx],
+        instructions: [
+          ComputeBudgetProgram.setComputeUnitLimit({ units: 350_000 }),
+          prepareForPaymentIx,
+          mintMinterWnsIx,
+        ],
         payerKey: remoteFeePayer.publicKey,
         recentBlockhash: blockhash,
       }).compileToV0Message([lookupTableStore])
 
       const transaction = new VersionedTransaction(transactionMessage)
-      transaction.sign([remoteFeePayer.payer, authority, memberMintKeypair])
+      transaction.sign([user, remoteFeePayer.payer, authority, memberMintKeypair])
       const sig = await provider.connection.sendTransaction(transaction, { skipPreflight: true })
       await provider.connection.confirmTransaction({ blockhash, lastValidBlockHeight, signature: sig }, 'confirmed')
 
@@ -478,6 +583,13 @@ describe('tokengator-minter', () => {
         'confirmed',
         TOKEN_2022_PROGRAM_ID,
       )
+      const userNFTTokenData = await getAccount(
+        provider.connection,
+        userNFTTokenAccount,
+        'confirmed',
+        TOKEN_2022_PROGRAM_ID,
+      )
+
       const metadataData = await getTokenMetadata(provider.connection, memberMintKeypair.publicKey)
 
       const postBalance = await provider.connection.getBalance(authority.publicKey)
@@ -490,6 +602,9 @@ describe('tokengator-minter', () => {
       expect(mintData.freezeAuthority).toStrictEqual(manager)
       expect(mintData.supply).toStrictEqual(1n)
 
+      // User
+      expect(userNFTTokenData.amount).toStrictEqual(1n)
+
       // Metadata
       expect(metadataData).not.toBeNull()
       expect(metadataData?.name).toStrictEqual(name)
@@ -497,7 +612,6 @@ describe('tokengator-minter', () => {
       expect(metadataData?.uri).toStrictEqual(uri)
       expect(metadataData?.mint).toStrictEqual(memberMintKeypair.publicKey)
       expect(metadataData?.updateAuthority).toStrictEqual(minter)
-      expect(metadataData?.additionalMetadata).toEqual(metadata)
     }
   })
 
@@ -543,11 +657,7 @@ describe('tokengator-minter', () => {
       expect(postBalance).toStrictEqual(1 * LAMPORTS_PER_SOL)
 
       // Metadata
-      expect(metadataData?.additionalMetadata).toEqual([
-        ['community', 'deanslist'],
-        ['username', 'beeman'],
-        ['preset', 'tourist-visa'],
-      ])
+      expect(metadataData?.additionalMetadata.find((a) => a[0] === 'preset')).toEqual(['preset', 'tourist-visa'])
     }
   })
 
@@ -587,7 +697,7 @@ describe('tokengator-minter', () => {
 
       const { blockhash, lastValidBlockHeight } = await provider.connection.getLatestBlockhash()
       const transactionMessage = new TransactionMessage({
-        instructions: [ComputeBudgetProgram.setComputeUnitLimit({ units: 30_000 }), createActivityIx],
+        instructions: [ComputeBudgetProgram.setComputeUnitLimit({ units: 50_000 }), createActivityIx],
         payerKey: remoteFeePayer.publicKey,
         recentBlockhash: blockhash,
       }).compileToV0Message([lookupTableStore])
@@ -596,6 +706,7 @@ describe('tokengator-minter', () => {
       transaction.sign([remoteFeePayer.payer])
       const sig = await provider.connection.sendTransaction(transaction, { skipPreflight: true })
       await provider.connection.confirmTransaction({ blockhash, lastValidBlockHeight, signature: sig }, 'confirmed')
+      await sleep(500)
 
       const activityData = await program.account.activity.fetch(activity, 'confirmed')
 

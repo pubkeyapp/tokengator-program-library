@@ -590,6 +590,7 @@ describe('tokengator-minter', () => {
         TOKEN_2022_PROGRAM_ID,
       )
 
+      const minterData = await program.account.minter.fetch(minter)
       const metadataData = await getTokenMetadata(provider.connection, memberMintKeypair.publicKey)
 
       const postBalance = await provider.connection.getBalance(authority.publicKey)
@@ -601,6 +602,9 @@ describe('tokengator-minter', () => {
       expect(mintData.mintAuthority).toStrictEqual(manager)
       expect(mintData.freezeAuthority).toStrictEqual(manager)
       expect(mintData.supply).toStrictEqual(1n)
+
+      // Minter
+      expect(minterData.minterConfig.applicationConfig.paymentConfig.expiresAt).not.toEqual(0)
 
       // User
       expect(userNFTTokenData.amount).toStrictEqual(1n)

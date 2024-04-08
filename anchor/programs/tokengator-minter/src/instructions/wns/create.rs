@@ -47,6 +47,7 @@ pub struct CreateMinterWNS<'info> {
       constraint = receipt.receiver.eq(&authority.key()) @ TokenGatorMinterError::InvalidAuthority,
       constraint = receipt.receiver_token_account.eq(&authority_token_account.key()) @ TokenGatorMinterError::InvalidAuthority,
       has_one = payment_mint @ TokenGatorMinterError::InvalidMint,
+      constraint = receipt.payment_amount.eq(&args.payment_config.price) @ TokenGatorMinterError::InvalidReceipt
     )]
     pub receipt: Account<'info, Receipt>,
 
@@ -145,17 +146,24 @@ pub fn create(ctx: Context<CreateMinterWNS>, args: CreateMinterWNSArgs) -> Resul
         ctx.accounts.fee_payer_token_account.key()
     );
 
-    create_associated_token(CpiContext::new(
-        ctx.accounts.associated_token_program.to_account_info(),
-        CreateAssociatedToken {
-            payer: ctx.accounts.fee_payer.to_account_info(),
-            associated_token: ctx.accounts.fee_payer_token_account.to_account_info(),
-            authority: ctx.accounts.fee_payer.to_account_info(),
-            mint: ctx.accounts.payment_mint.to_account_info(),
-            system_program: ctx.accounts.system_program.to_account_info(),
-            token_program: ctx.accounts.token_program.to_account_info(),
-        },
-    ))?;
+    if ctx
+        .accounts
+        .fee_payer_token_account
+        .to_account_info()
+        .data_is_empty()
+    {
+        create_associated_token(CpiContext::new(
+            ctx.accounts.associated_token_program.to_account_info(),
+            CreateAssociatedToken {
+                payer: ctx.accounts.fee_payer.to_account_info(),
+                associated_token: ctx.accounts.fee_payer_token_account.to_account_info(),
+                authority: ctx.accounts.fee_payer.to_account_info(),
+                mint: ctx.accounts.payment_mint.to_account_info(),
+                system_program: ctx.accounts.system_program.to_account_info(),
+                token_program: ctx.accounts.token_program.to_account_info(),
+            },
+        ))?;
+    }
 
     transfer_checked(
         CpiContext::new(
@@ -195,9 +203,17 @@ pub fn create(ctx: Context<CreateMinterWNS>, args: CreateMinterWNSArgs) -> Resul
             .unwrap(),
     };
 
+    let application_payment_config = PaymentConfig {
+        price: application_config.payment_config.price,
+        amount: application_config.payment_config.amount,
+        mint: application_config.payment_config.mint,
+        days: application_config.payment_config.days,
+        expires_at: 0,
+    };
+
     let application_config = MinterApplicationConfig {
         identities: application_config.identities,
-        payment_config: payment_config.clone(),
+        payment_config: application_payment_config,
     };
 
     // 1. Saving Minter onchain

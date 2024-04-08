@@ -42,6 +42,7 @@ pub struct MintMinterWNS<'info> {
       constraint = matches!(receipt.payment_type, ReceiptType::User) @ TokenGatorMinterError::InvalidReceipt,
       constraint = receipt.receiver.eq(&authority.key()) @ TokenGatorMinterError::InvalidAuthority,
       constraint = receipt.sender.eq(&receiver.key()) @ TokenGatorMinterError::InvalidReceiver,
+      constraint = receipt.payment_amount.eq(&minter.minter_config.application_config.payment_config.price) @ TokenGatorMinterError::InvalidReceipt
     )]
     pub receipt: Account<'info, Receipt>,
 
@@ -87,7 +88,7 @@ pub fn mint(ctx: Context<MintMinterWNS>, args: MintMinterWNSArgs) -> Result<()> 
     let minter = &mut ctx.accounts.minter;
     let group = &mut ctx.accounts.group;
     let member = &mut ctx.accounts.member;
-    let manager = &mut ctx.accounts.manager;
+    let manager = &ctx.accounts.manager;
 
     let receiver = &ctx.accounts.receiver;
     let fee_payer = &ctx.accounts.fee_payer;
@@ -221,6 +222,20 @@ pub fn mint(ctx: Context<MintMinterWNS>, args: MintMinterWNSArgs) -> Result<()> 
         signer_seeds,
     ))?;
 
+    // 4. Updating minter
+    minter
+        .minter_config
+        .application_config
+        .payment_config
+        .expires_at = Clock::get()?.unix_timestamp
+        + (60
+            * 60
+            * 24
+            * i64::try_from(minter.minter_config.application_config.payment_config.days).unwrap());
+
+    minter.validate()?;
+
+    // 5. Closing Receipt
     ctx.accounts.receipt.close(fee_payer.to_account_info())?;
 
     Ok(())

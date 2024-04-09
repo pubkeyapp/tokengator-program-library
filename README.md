@@ -1,6 +1,13 @@
 # TokenGator Program Library
 
-This is a work in progress.
+> The Easiest Way to Manage Dynamic NFT Collections on Solana.
+
+## Repositories
+
+TokenGator is currently split into two repositories, one for the platform (API/SDK/Web UI) and one for the Anchor program.
+
+- [TokenGator Platform](https://github.com/pubkeyapp/tokengator)
+- [TokenGator Program Library](https://github.com/pubkeyapp/tokengator-program-library) (this repository)
 
 ## Getting Started
 
@@ -9,14 +16,6 @@ This is a work in progress.
 - [Node.js](https://nodejs.org/en/) (v20 or higher)
 - [PNPM](https://pnpm.io/) (v8 or higher)
 - [Git](https://git-scm.com/)
-
-> [!TIP]
-> If you don't have PNPM installed, you can install it using `corepack`:
->
-> ```sh
-> corepack enable
-> corepack prepare pnpm@8 --activate
-> ```
 
 ### Installation
 
